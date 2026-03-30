@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    Standalone WebJar — SKAT Design System
+    =======================================
+    Packages the SKAT design tokens (CSS), Academy Sans + Republic fonts,
+    DAP ikon font, timeline component CSS, and HTMX a11y helper into a
+    single JAR that Spring Boot serves automatically via /webjars/*.
+
+    Install to local Maven repo:
+      mvn install
+
+    Deploy to GitHub Packages (or Nexus):
+      mvn deploy
+
+    Usage in any Spring Boot project — add to pom.xml:
+      <dependency>
+        <groupId>dk.ufst.opendebt</groupId>
+        <artifactId>skat-design-system</artifactId>
+        <version>1.0.0</version>
+      </dependency>
+
+    Also add webjars-locator-core to omit the version from URLs:
+      <dependency>
+        <groupId>org.webjars</groupId>
+        <artifactId>webjars-locator-core</artifactId>
+      </dependency>
+
+    Reference in Thymeleaf templates:
+      <link rel="stylesheet" th:href="@{/webjars/skat-design-system/css/skat-tokens.css}" />
+      <link rel="stylesheet" th:href="@{/webjars/skat-design-system/css/timeline.css}" />
+      <script th:src="@{/webjars/skat-design-system/js/a11y.js}" defer></script>
+  -->
+
+  <groupId>dk.ufst.opendebt</groupId>
+  <artifactId>skat-design-system</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <name>SKAT Design System</name>
+  <description>
+    WebJar packaging of the SKAT design tokens, Academy Sans and Republic fonts,
+    DAP ikon font, timeline component, and HTMX accessibility helper.
+    Derived from the public skat.dk design language.
+  </description>
+
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <WebJar-Name>skat-design-system</WebJar-Name>
+              <WebJar-Version>${project.version}</WebJar-Version>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

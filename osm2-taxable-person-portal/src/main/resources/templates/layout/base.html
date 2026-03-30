@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      lang="da">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title layout:title-pattern="$CONTENT_TITLE - OSS Registrering">OSS Registrering</title>
+
+    <!-- SKAT Design System — tokens, Academy Sans, Republic, DAP ikon font (ADR-0023) -->
+    <link rel="stylesheet" th:href="@{/webjars/skat-design-system/css/skat-tokens.css}" />
+    <link rel="stylesheet" th:href="@{/webjars/skat-design-system/css/timeline.css}" />
+
+    <!-- Page-specific head content -->
+    <th:block layout:fragment="head" />
+</head>
+<body class="skat-layout">
+
+    <header class="skat-header" role="banner">
+        <div class="skat-header__logo">
+            <span class="dap-ikon dap-ikon--skat-logo" aria-hidden="true"></span>
+            <span class="skat-header__title" th:text="#{portal.title}">One Stop Moms</span>
+        </div>
+        <nav class="skat-header__nav" aria-label="Primær navigation">
+            <ul>
+                <li><a th:href="@{/dashboard}" th:text="#{nav.dashboard}">Oversigt</a></li>
+                <li><a th:href="@{/registration}" th:text="#{nav.registration}">Registrering</a></li>
+                <li><a th:href="@{/returns}" th:text="#{nav.returns}">Angivelser</a></li>
+                <li><a th:href="@{/payments}" th:text="#{nav.payments}">Betalinger</a></li>
+            </ul>
+        </nav>
+        <div class="skat-header__user">
+            <span th:text="${#authentication?.name}" class="skat-header__username"></span>
+            <a th:href="@{/logout}" th:text="#{nav.logout}">Log ud</a>
+        </div>
+    </header>
+
+    <main id="main-content" class="skat-main" layout:fragment="content">
+        <!-- Page content inserted here -->
+    </main>
+
+    <footer class="skat-footer" role="contentinfo">
+        <p th:text="#{footer.authority}">Skatteforvaltningen</p>
+    </footer>
+
+    <!-- HTMX accessibility helper (focus management for screen readers) -->
+    <script th:src="@{/webjars/skat-design-system/js/a11y.js}" defer></script>
+
+    <!-- Page-specific scripts -->
+    <th:block layout:fragment="scripts" />
+
+</body>
+</html>

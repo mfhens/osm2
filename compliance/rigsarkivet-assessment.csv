@@ -1,0 +1,19 @@
+# Rigsarkivet (Danish National Archives) Compliance Assessment — osm2
+# Managed by: rigsarkivet-compliance-data-assessor
+# This file is a STUB. Run rigsarkivet-compliance-data-assessor to populate with evidence-based findings.
+# Applicable only if osm2 is operated by or on behalf of a Danish public authority.
+# If not applicable, set all rows to archival_obligation=FALSE and document the rationale in the notes column.
+#
+# Columns:
+#   table_or_entity      - database table or data entity name
+#   description          - brief description of what the entity contains
+#   legal_significance   - does the entity document a governmental decision? (TRUE/FALSE/UNKNOWN)
+#   auditability         - is the entity required for audit trails? (TRUE/FALSE/UNKNOWN)
+#   historical_value     - does the entity have historical/research value? (TRUE/FALSE/UNKNOWN)
+#   archival_obligation  - overall obligation to preserve (TRUE/FALSE/UNKNOWN)
+#   preservation_format  - required format for archival export (e.g. CSV, XML, SIARD)
+#   notes                - free-text rationale
+#   stub                 - TRUE if this row is a placeholder, FALSE if evidence-based
+table_or_entity,description,legal_significance,auditability,historical_value,archival_obligation,preservation_format,notes,stub
+osm_changesets,Records of OSM changeset ingestion events including timestamps and source metadata,UNKNOWN,TRUE,TRUE,UNKNOWN,CSV,"Changeset ingestion logs may constitute an audit trail if osm2 is used in a public-sector context. To be assessed.",TRUE
+processed_geodata,Normalised and enriched geodata derived from OSM,FALSE,FALSE,TRUE,UNKNOWN,GeoPackage / CSV,"Historical geodata snapshots may have archival value. Confirm whether system is subject to Rigsarkivet obligations.",TRUE

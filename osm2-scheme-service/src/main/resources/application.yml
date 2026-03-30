@@ -1,0 +1,59 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: osm2-scheme-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:osm2_scheme}
+    username: ${DB_USER:osm2_scheme}
+    password: ${DB_PASSWORD:osm2_scheme}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: scheme
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    default-schema: scheme
+    create-schemas: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/osm2}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  structured:
+    format:
+      console: logstash
+  level:
+    root: INFO
+    dk.osm2: DEBUG
+
+otel:
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  service:
+    name: ${spring.application.name}

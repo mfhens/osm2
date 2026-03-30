@@ -1,0 +1,1077 @@
+/*
+ * OpenDebt — SKAT design tokens
+ *
+ * Color palette, spacing, typography, and layout tokens derived from
+ * the public skat.dk design language. Uses the same Academy Sans and
+ * Republic typefaces as skat.dk.
+ *
+ * Source: skat.dk/borger CSS custom properties (March 2026)
+ * ADR: docs/adr/0023-creditor-portal-frontend-technology.md
+ */
+
+/* =========================================================================
+   @font-face — Academy Sans (UI / body)
+   ========================================================================= */
+@font-face {
+  font-family: "Academy Sans";
+  src: url("../fonts/academy-sans/AcademySans-Regular.woff2") format("woff2"),
+       url("../fonts/academy-sans/AcademySans-Regular.woff")  format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: fallback;
+}
+@font-face {
+  font-family: "Academy Sans";
+  src: url("../fonts/academy-sans/AcademySans-Italic.woff2") format("woff2"),
+       url("../fonts/academy-sans/AcademySans-Italic.woff")  format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: fallback;
+}
+@font-face {
+  font-family: "Academy Sans";
+  src: url("../fonts/academy-sans/AcademySans-Medium.woff2") format("woff2"),
+       url("../fonts/academy-sans/AcademySans-Medium.woff")  format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: fallback;
+}
+@font-face {
+  font-family: "Academy Sans";
+  src: url("../fonts/academy-sans/AcademySans-Demibold.woff2") format("woff2"),
+       url("../fonts/academy-sans/AcademySans-Demibold.woff")  format("woff");
+  font-weight: 600;
+  font-style: normal;
+  font-display: fallback;
+}
+@font-face {
+  font-family: "Academy Sans";
+  src: url("../fonts/academy-sans/AcademySans-Bold.woff2") format("woff2"),
+       url("../fonts/academy-sans/AcademySans-Bold.woff")  format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: fallback;
+}
+@font-face {
+  font-family: "Academy Sans";
+  src: url("../fonts/academy-sans/AcademySans-Black.woff2") format("woff2"),
+       url("../fonts/academy-sans/AcademySans-Black.woff")  format("woff");
+  font-weight: 900;
+  font-style: normal;
+  font-display: fallback;
+}
+
+/* =========================================================================
+   @font-face — Republic (headings / display)
+   ========================================================================= */
+@font-face {
+  font-family: "Republic";
+  src: url("../fonts/republic/Republic-Light.woff2") format("woff2"),
+       url("../fonts/republic/Republic-Light.woff")  format("woff");
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Republic";
+  src: url("../fonts/republic/Republic-LightItalic.woff2") format("woff2"),
+       url("../fonts/republic/Republic-LightItalic.woff")  format("woff");
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: "Republic";
+  src: url("../fonts/republic/Republic-Regular.woff2") format("woff2"),
+       url("../fonts/republic/Republic-Regular.woff")  format("woff");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Republic";
+  src: url("../fonts/republic/Republic-Italic.woff2") format("woff2"),
+       url("../fonts/republic/Republic-Italic.woff")  format("woff");
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: "Republic";
+  src: url("../fonts/republic/Republic-DemiBold.woff2") format("woff2"),
+       url("../fonts/republic/Republic-DemiBold.woff")  format("woff");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Republic";
+  src: url("../fonts/republic/Republic-Bold.woff2") format("woff2"),
+       url("../fonts/republic/Republic-Bold.woff")  format("woff");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Republic";
+  src: url("../fonts/republic/Republic-Heavy.woff2") format("woff2"),
+       url("../fonts/republic/Republic-Heavy.woff")  format("woff");
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* =========================================================================
+   @font-face — dap-ikon-font (SKAT icon glyphs)
+   ========================================================================= */
+@font-face {
+  font-family: "dap-ikon-font";
+  src: url("../fonts/dap-ikon-font.woff")  format("woff"),
+       url("../fonts/dap-ikon-font.ttf")   format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+.ikon {
+  font-family: "dap-ikon-font", sans-serif !important;
+  font-style: normal;
+  font-weight: 400;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ikon-gaeld::before          { content: "\e972"; }
+.ikon-tilfoej::before        { content: "\e97c"; }
+.ikon-henvendelser::before   { content: "\e93d"; }
+.ikon-se::before             { content: "\e983"; }
+.ikon-ok::before             { content: "\e97d"; }
+.ikon-problem::before        { content: "\e954"; }
+.ikon-information::before    { content: "\e941"; }
+.ikon-hjaelp::before         { content: "\e93e"; }
+.ikon-soeg::before           { content: "\e914"; }
+.ikon-borger::before         { content: "\e905"; }
+.ikon-erhverv::before        { content: "\e907"; }
+.ikon-log-ind::before        { content: "\e90e"; }
+.ikon-arrow-right::before    { content: "\e903"; }
+.ikon-kalender::before       { content: "\e949"; }
+.ikon-kontakt::before        { content: "\e94a"; }
+.ikon-send::before           { content: "\e95d"; }
+
+/* =========================================================================
+   Design tokens
+   ========================================================================= */
+:root {
+  /* -- Typography -------------------------------------------------------- */
+  --font-primary: "Academy Sans", sans-serif;
+  --font-heading: "Republic", "Academy Sans", serif;
+
+  --font-weight--normal:   400;
+  --font-weight--medium:   500;
+  --font-weight--semibold: 600;
+  --font-weight--bold:     700;
+  --font-weight--black:    900;
+
+  --font-size--2xs: 0.625rem;   /* 10px */
+  --font-size--xs:  0.75rem;    /* 12px */
+  --font-size--sm:  0.875rem;   /* 14px */
+  --font-size--md:  1rem;       /* 16px */
+  --font-size--lg:  1.125rem;   /* 18px */
+  --font-size--xl:  1.25rem;    /* 20px */
+  --font-size--2xl: 1.375rem;   /* 22px */
+  --font-size--3xl: 1.5rem;     /* 24px */
+  --font-size--4xl: 1.625rem;   /* 26px */
+  --font-size--5xl: 1.75rem;    /* 28px */
+  --font-size--6xl: 2.8125rem;  /* 45px */
+
+  --heading--line-height:     1.2;
+  --heading--line-height--sm: 1.1;
+  --teaser--line-height:      1.3;
+
+  /* -- Color palette (raw) ----------------------------------------------- */
+  --color-black:           #000;
+  --color-white:           #fff;
+  --color-haiti:           #14143c;
+  --color-mulled-wine:     #434363;
+  --color-storm-gray:      #72728a;
+  --color-santas-gray:     #a1a1b1;
+  --color-mischka:         #d0d0d8;
+  --color-curious-blue:    #2e99d9;
+  --color-silver-rust:     #d1c5c3;
+  --color-guardsman-red:   #c80000;
+  --color-mine-shaft:      #2c2c2c;
+  --color-concrete:        #f2f2f2;
+  --color-mercury:         #e5e5e5;
+  --color-catskill-white:  #e3ebf2;
+  --color-rip-curl:        #e8e8ec;
+  --color-ebb:             #e8e2e1;
+  --color-fun-green:       #008139;
+  --color-surf:            #b2d9c4;
+  --color-mandys-pink:     #f5b4b9;
+  --color-lightning-yellow: #ffbb16;
+  --color-monza:           #df0515;
+  --color-mint-tulip:      #c0e0f4;
+  --color-colonial-white:  #ffebb9;
+
+  /* -- Semantic colors --------------------------------------------------- */
+  --color-primary:         var(--color-haiti);
+  --color-primary--80:     var(--color-mulled-wine);
+  --color-primary--60:     var(--color-storm-gray);
+  --color-primary--40:     var(--color-santas-gray);
+  --color-primary--20:     var(--color-mischka);
+  --color-secondary:       var(--color-curious-blue);
+  --color-tertiary:        var(--color-silver-rust);
+  --color-error:           var(--color-guardsman-red);
+  --color-dark:            var(--color-mine-shaft);
+  --color-light:           var(--color-concrete);
+  --color-success:         var(--color-fun-green);
+  --color-warning:         var(--color-lightning-yellow);
+  --color-danger:          var(--color-monza);
+
+  /* -- Borders & surface ------------------------------------------------- */
+  --color-border--gray:    var(--color-primary--40);
+  --color-border--light:   var(--color-light);
+  --color-link-underline--light: var(--color-mischka);
+  --color-link-hover:      var(--color-mulled-wine);
+
+  --color-bg-subtle:       var(--color-mercury);
+  --color-bg--warm:        var(--color-ebb);
+  --color-bg--light-blue:  var(--color-catskill-white);
+  --color-bg--success:     var(--color-surf);
+  --color-bg--error:       var(--color-mandys-pink);
+  --color-bg--warning:     var(--color-colonial-white);
+  --color-hightlight-blue: var(--color-mint-tulip);
+
+  /* -- Spacing ----------------------------------------------------------- */
+  --spacing--base: 1rem;
+  --spacing--3xs:  calc(var(--spacing--base) / 16);
+  --spacing--2xs:  calc(var(--spacing--base) / 8);
+  --spacing--xs:   calc(var(--spacing--base) / 4);
+  --spacing--sm:   calc(var(--spacing--base) / 2);
+  --spacing--md:   calc(var(--spacing--base) * 1);
+  --spacing--lg:   calc(var(--spacing--base) * 1.5);
+  --spacing--xl:   calc(var(--spacing--base) * 2);
+  --spacing--2xl:  calc(var(--spacing--base) * 3);
+  --spacing--3xl:  calc(var(--spacing--base) * 5);
+
+  /* -- Borders ----------------------------------------------------------- */
+  --border--sm:  0.0625rem;
+  --border--md:  calc(0.0625rem * 2);
+  --border--lg:  calc(0.0625rem * 3);
+  --border--xl:  calc(0.0625rem * 4);
+
+  /* -- Corners ----------------------------------------------------------- */
+  --corner-size--base: 0.5rem;
+  --corner-size--xs:   calc(var(--corner-size--base) * 0.6);
+  --corner-size--sm:   var(--corner-size--base);
+  --corner-size--md:   calc(var(--corner-size--base) * 3);
+  --corner-size--lg:   calc(var(--corner-size--base) * 5);
+  --corner-circle:     50%;
+
+  /* -- Icon sizes -------------------------------------------------------- */
+  --icon-size--base: 1rem;
+  --icon-size--2xs:  calc(var(--icon-size--base) * 0.6);
+  --icon-size--xs:   calc(var(--icon-size--base) * 0.8);
+  --icon-size--sm:   calc(var(--icon-size--base) * 1.5);
+  --icon-size--md:   calc(var(--icon-size--base) * 2);
+  --icon-size--lg:   calc(var(--icon-size--base) * 3);
+  --icon-size--xl:   calc(var(--icon-size--base) * 4);
+  --icon-size--2xl:  calc(var(--icon-size--base) * 6);
+
+  /* -- Layout widths ----------------------------------------------------- */
+  --width--base:         calc(0.625rem * 100);
+  --width-text-max:      calc(var(--width--base) * 0.752);
+  --width-text-max-sm:   calc(var(--width-text-max) * 0.75);
+  --width-input:         calc(var(--width--base) * 0.2);
+  --width-input--large:  calc(var(--width--base) * 0.3);
+  --width-sm:            calc(var(--width--base) * 0.943);
+  --width-md:            calc(var(--width--base) * 1.4);
+  --width-lg:            calc(var(--width--base) * 1.6);
+  --width-xl:            calc(var(--width--base) * 2);
+
+  /* -- Grid -------------------------------------------------------------- */
+  --grid-gutter: 1rem;
+
+  /* -- Transitions ------------------------------------------------------- */
+  --trans-time--shortest: 0.1s;
+  --trans-time--shorter:  0.2s;
+  --trans-time--standard: 0.3s;
+  --trans-time--long:     0.4s;
+  --trans-time--longer:   0.6s;
+
+  --ease--dynamic:        cubic-bezier(0.86, 0, 0.07, 1);
+  --ease--tender:         cubic-bezier(0.73, 0.09, 0.21, 0.96);
+
+  /* -- Z-index layers ---------------------------------------------------- */
+  --z-index--modal:  950;
+  --z-index--header: 700;
+
+  /* -- Line heights (body text) ------------------------------------------ */
+  --line-height--base: 1.5;
+  --line-height--2xl:  1.8;
+}
+
+/* =========================================================================
+   Base reset and typography
+   ========================================================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-primary);
+  font-size: var(--font-size--md);
+  font-weight: var(--font-weight--normal);
+  line-height: var(--line-height--base);
+  color: var(--color-primary);
+  background-color: var(--color-bg-subtle);
+}
+
+/* -- Headings ------------------------------------------------------------ */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: var(--heading--line-height);
+  color: var(--color-primary);
+  margin-top: 0;
+}
+
+h1 {
+  font-size: var(--font-size--6xl);
+  font-weight: var(--font-weight--black);
+  line-height: var(--heading--line-height--sm);
+  margin-bottom: var(--spacing--lg);
+}
+
+h2 {
+  font-size: var(--font-size--3xl);
+  font-weight: var(--font-weight--medium);
+  margin-bottom: var(--spacing--md);
+}
+
+h3 {
+  font-size: var(--font-size--xl);
+  font-weight: var(--font-weight--semibold);
+  margin-bottom: var(--spacing--sm);
+}
+
+h4 {
+  font-size: var(--font-size--lg);
+  font-weight: var(--font-weight--semibold);
+  margin-bottom: var(--spacing--sm);
+}
+
+/* -- Links --------------------------------------------------------------- */
+a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--color-link-underline--light);
+  text-underline-offset: 0.2em;
+  transition: color var(--trans-time--shorter) var(--ease--tender),
+              text-decoration-color var(--trans-time--shorter) var(--ease--tender);
+}
+
+a:hover,
+a:focus {
+  color: var(--color-link-hover);
+  text-decoration-color: currentColor;
+}
+
+/* =========================================================================
+   Layout
+   ========================================================================= */
+.skat-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.skat-content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--width-lg);
+  margin: 0 auto;
+  padding: var(--spacing--xl) var(--grid-gutter);
+}
+
+/* =========================================================================
+   Header
+   ========================================================================= */
+.skat-header {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: var(--spacing--sm) var(--grid-gutter);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index--header);
+}
+
+.skat-header__inner {
+  max-width: var(--width-lg);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing--md);
+}
+
+.skat-header__logo {
+  font-family: var(--font-heading);
+  font-size: var(--font-size--xl);
+  font-weight: var(--font-weight--bold);
+  color: var(--color-white);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--sm);
+}
+
+.skat-header__logo:hover {
+  color: var(--color-white);
+  text-decoration: none;
+}
+
+.skat-header__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--lg);
+}
+
+.skat-header__nav a {
+  color: var(--color-white);
+  text-decoration: none;
+  font-size: var(--font-size--sm);
+  font-weight: var(--font-weight--semibold);
+  padding: var(--spacing--xs) var(--spacing--sm);
+  border-radius: var(--corner-size--xs);
+  transition: background-color var(--trans-time--shorter) var(--ease--tender);
+}
+
+.skat-header__nav a:hover,
+.skat-header__nav a:focus {
+  background-color: var(--color-primary--80);
+  color: var(--color-white);
+}
+
+/* =========================================================================
+   Breadcrumb
+   ========================================================================= */
+.skat-breadcrumb {
+  background-color: var(--color-white);
+  padding: var(--spacing--sm) var(--grid-gutter);
+  font-size: var(--font-size--sm);
+  color: var(--color-primary);
+  border-bottom: var(--border--sm) solid var(--color-border--light);
+}
+
+.skat-breadcrumb__inner {
+  max-width: var(--width-lg);
+  margin: 0 auto;
+}
+
+.skat-breadcrumb a {
+  color: var(--color-primary);
+}
+
+.skat-breadcrumb__separator {
+  margin: 0 var(--spacing--xs);
+  color: var(--color-primary--60);
+}
+
+/* =========================================================================
+   Cards
+   ========================================================================= */
+.skat-card {
+  background-color: var(--color-white);
+  border-radius: var(--corner-size--sm);
+  padding: var(--spacing--xl);
+  margin-bottom: var(--spacing--md);
+  border: var(--border--sm) solid var(--color-border--light);
+  transition: box-shadow var(--trans-time--shorter) var(--ease--tender);
+}
+
+.skat-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.skat-card__title {
+  font-size: var(--font-size--xl);
+  font-weight: var(--font-weight--semibold);
+  margin-bottom: var(--spacing--sm);
+  color: var(--color-primary);
+}
+
+.skat-card__body {
+  color: var(--color-dark);
+  line-height: var(--line-height--base);
+}
+
+/* =========================================================================
+   Buttons
+   ========================================================================= */
+.skat-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing--xs);
+  font-family: var(--font-primary);
+  font-size: var(--font-size--md);
+  font-weight: var(--font-weight--semibold);
+  line-height: 1;
+  padding: var(--spacing--sm) var(--spacing--xl);
+  border: var(--border--md) solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--trans-time--shorter) var(--ease--tender),
+              color var(--trans-time--shorter) var(--ease--tender),
+              border-color var(--trans-time--shorter) var(--ease--tender);
+}
+
+.skat-btn:focus-visible {
+  outline: var(--border--lg) solid var(--color-secondary);
+  outline-offset: var(--border--md);
+}
+
+.skat-btn--primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+.skat-btn--primary:hover {
+  background-color: var(--color-primary--80);
+  border-color: var(--color-primary--80);
+  color: var(--color-white);
+}
+
+.skat-btn--secondary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.skat-btn--secondary:hover {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+/* =========================================================================
+   Forms
+   ========================================================================= */
+.skat-form-group {
+  margin-bottom: var(--spacing--lg);
+}
+
+.skat-label {
+  display: block;
+  font-size: var(--font-size--md);
+  font-weight: var(--font-weight--semibold);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing--xs);
+}
+
+.skat-input {
+  display: block;
+  width: 100%;
+  max-width: var(--width-text-max);
+  font-family: var(--font-primary);
+  font-size: var(--font-size--md);
+  padding: var(--spacing--sm);
+  border: var(--border--md) solid var(--color-border--gray);
+  border-radius: 0;
+  color: var(--color-primary);
+  background-color: var(--color-white);
+  transition: border-color var(--trans-time--shorter) var(--ease--tender);
+}
+
+.skat-input:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 var(--border--md) var(--color-hightlight-blue);
+}
+
+.skat-input--error {
+  border-color: var(--color-error);
+}
+
+.skat-error-message {
+  color: var(--color-error);
+  font-size: var(--font-size--sm);
+  font-weight: var(--font-weight--semibold);
+  margin-top: var(--spacing--xs);
+}
+
+/* =========================================================================
+   Tables
+   ========================================================================= */
+.skat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size--md);
+}
+
+.skat-table th {
+  text-align: left;
+  font-weight: var(--font-weight--semibold);
+  color: var(--color-primary);
+  padding: var(--spacing--sm) var(--spacing--md);
+  border-bottom: var(--border--md) solid var(--color-primary);
+}
+
+.skat-table td {
+  padding: var(--spacing--sm) var(--spacing--md);
+  border-bottom: var(--border--sm) solid var(--color-border--light);
+  color: var(--color-dark);
+}
+
+.skat-table tbody tr:hover {
+  background-color: var(--color-bg--light-blue);
+}
+
+/* =========================================================================
+   Alerts / status messages
+   ========================================================================= */
+.skat-alert {
+  padding: var(--spacing--md) var(--spacing--lg);
+  margin-bottom: var(--spacing--md);
+  border-left: var(--border--xl) solid transparent;
+  font-size: var(--font-size--md);
+}
+
+.skat-alert--success {
+  background-color: var(--color-bg--success);
+  border-left-color: var(--color-success);
+  color: var(--color-dark);
+}
+
+.skat-alert--error {
+  background-color: var(--color-bg--error);
+  border-left-color: var(--color-danger);
+  color: var(--color-dark);
+}
+
+.skat-alert--warning {
+  background-color: var(--color-bg--warning);
+  border-left-color: var(--color-warning);
+  color: var(--color-dark);
+}
+
+.skat-alert--info {
+  background-color: var(--color-bg--light-blue);
+  border-left-color: var(--color-secondary);
+  color: var(--color-dark);
+}
+
+/* =========================================================================
+   Footer
+   ========================================================================= */
+.skat-footer {
+  background-color: var(--color-white);
+  border-top: var(--border--sm) solid var(--color-border--light);
+  padding: var(--spacing--xl) var(--grid-gutter);
+  margin-top: auto;
+}
+
+.skat-footer__inner {
+  max-width: var(--width-lg);
+  margin: 0 auto;
+  font-size: var(--font-size--sm);
+  color: var(--color-primary--60);
+}
+
+/* =========================================================================
+   Skip link (accessibility)
+   ========================================================================= */
+.skat-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: var(--spacing--sm);
+  z-index: calc(var(--z-index--modal) + 1);
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: var(--spacing--sm) var(--spacing--md);
+  font-weight: var(--font-weight--semibold);
+  text-decoration: none;
+}
+
+.skat-skip-link:focus {
+  left: var(--spacing--sm);
+}
+
+/* =========================================================================
+   Utilities
+   ========================================================================= */
+.skat-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skat-container {
+  max-width: var(--width-lg);
+  margin: 0 auto;
+  padding: 0 var(--grid-gutter);
+}
+
+/* =========================================================================
+   Card grid
+   ========================================================================= */
+.skat-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--spacing--md);
+}
+
+/* =========================================================================
+   Badges
+   ========================================================================= */
+.skat-badge {
+  display: inline-block;
+  font-size: var(--font-size--sm);
+  font-weight: var(--font-weight--semibold);
+  padding: var(--spacing--2xs) var(--spacing--sm);
+  border-radius: var(--corner-size--xs);
+  line-height: var(--line-height--base);
+}
+
+.skat-badge--success {
+  background-color: var(--color-bg--success);
+  color: var(--color-success);
+}
+
+.skat-badge--error {
+  background-color: var(--color-bg--error);
+  color: var(--color-danger);
+}
+
+.skat-badge--warning {
+  background-color: var(--color-bg--warning);
+  color: var(--color-dark);
+}
+
+/* =========================================================================
+   Icon integration helpers
+   ========================================================================= */
+.skat-card__icon {
+  font-size: 2rem;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing--sm);
+  display: block;
+}
+
+.skat-header__nav a .ikon {
+  margin-right: var(--spacing--2xs);
+  font-size: 0.9em;
+}
+
+.skat-alert .ikon {
+  margin-right: var(--spacing--xs);
+  font-size: 1.1em;
+  vertical-align: -0.1em;
+}
+
+.skat-btn .ikon {
+  margin-right: var(--spacing--xs);
+  font-size: 1em;
+}
+
+.skat-footer__inner .ikon {
+  margin-right: var(--spacing--2xs);
+  font-size: 1em;
+}
+
+/* =========================================================================
+   Content layout (portal nav + page body)
+   ========================================================================= */
+.skat-content-layout {
+  display: grid;
+  grid-template-columns: 16rem 1fr;
+  gap: var(--spacing--xl);
+  align-items: start;
+}
+
+@media (max-width: 48rem) {
+  .skat-content-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.skat-content-layout__nav {
+  position: sticky;
+  top: 4rem;
+}
+
+.skat-content-layout__main {
+  min-width: 0;
+}
+
+/* =========================================================================
+   Portal secondary navigation
+   ========================================================================= */
+.skat-portal-nav {
+  background-color: var(--color-white);
+  border: var(--border--sm) solid var(--color-border--light);
+  border-radius: var(--corner-size--sm);
+  padding: var(--spacing--sm) 0;
+}
+
+.skat-portal-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.skat-portal-nav__item {
+  margin: 0;
+}
+
+.skat-portal-nav__link {
+  display: block;
+  padding: var(--spacing--xs) var(--spacing--md);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-size--sm);
+  font-weight: var(--font-weight--normal);
+  transition: background-color var(--trans-time--shorter) var(--ease--tender),
+              color var(--trans-time--shorter) var(--ease--tender);
+  border-left: var(--border--lg) solid transparent;
+}
+
+.skat-portal-nav__link:hover,
+.skat-portal-nav__link:focus {
+  background-color: var(--color-bg--light-blue);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.skat-portal-nav__link:focus-visible {
+  outline: var(--border--md) solid var(--color-secondary);
+  outline-offset: calc(-1 * var(--border--md));
+}
+
+.skat-portal-nav__link--active {
+  font-weight: var(--font-weight--semibold);
+  border-left-color: var(--color-secondary);
+  background-color: var(--color-bg--light-blue);
+}
+
+.skat-portal-nav__link--external::after {
+  content: " \2197";
+  font-size: 0.8em;
+}
+
+.skat-portal-nav__separator {
+  height: 0;
+  margin: var(--spacing--xs) var(--spacing--md);
+  border-top: var(--border--sm) solid var(--color-border--light);
+}
+
+/* System status indicator */
+.skat-portal-nav__status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--xs);
+  padding: var(--spacing--sm) var(--spacing--md);
+  font-size: var(--font-size--xs);
+  color: var(--color-primary--60);
+  border-top: var(--border--sm) solid var(--color-border--light);
+  margin-top: var(--spacing--xs);
+}
+
+.skat-portal-nav__status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--corner-circle);
+  background-color: var(--color-success);
+  flex-shrink: 0;
+}
+
+/* =========================================================================
+   Claim counts (dashboard)
+   ========================================================================= */
+.skat-card--count .skat-card__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.skat-count {
+  font-family: var(--font-heading);
+  font-size: var(--font-size--5xl);
+  font-weight: var(--font-weight--bold);
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.skat-btn--sm {
+  font-size: var(--font-size--sm);
+  padding: var(--spacing--2xs) var(--spacing--sm);
+}
+
+/* =========================================================================
+   Language selector — white ribbon above header
+   ========================================================================= */
+
+.skat-lang-ribbon {
+  background-color: var(--color-white);
+  padding: var(--spacing--xs) var(--grid-gutter);
+}
+
+.skat-lang-ribbon__inner {
+  max-width: var(--width-lg);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing--sm);
+  color: var(--color-primary);
+}
+
+.skat-lang-globe {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.skat-lang-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing--xs) var(--spacing--sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-size--sm);
+}
+
+.skat-lang-list li {
+  margin: 0;
+}
+
+.skat-lang-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing--2xs);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight--normal);
+}
+
+.skat-lang-list a:hover,
+.skat-lang-list a:focus {
+  text-decoration: underline;
+}
+
+.skat-lang-list a:focus {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.skat-lang-list a[aria-current="page"],
+.skat-lang-list a.skat-lang-list--current {
+  font-weight: var(--font-weight--bold);
+}
+
+.skat-lang-check {
+  font-size: 0.75em;
+}
+
+/* =========================================================================
+   Step indicator — wizard progress component
+   ========================================================================= */
+.skat-step-indicator {
+  margin-bottom: var(--spacing--lg);
+}
+
+.skat-step-indicator__list {
+  display: flex;
+  list-style: none;
+  margin: 0 0 var(--spacing--md);
+  padding: 0;
+  position: relative;
+  counter-reset: none;
+}
+
+/* Connecting line between steps */
+.skat-step-indicator__list::before {
+  content: "";
+  position: absolute;
+  top: 1.25rem;
+  left: calc(1.5rem + 0.5 * (100% - 4 * 3rem) / 3);
+  right: calc(1.5rem + 0.5 * (100% - 4 * 3rem) / 3);
+  height: 2px;
+  background-color: var(--color-mischka);
+  z-index: 0;
+}
+
+.skat-step-indicator__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Step circle */
+.skat-step-indicator__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: var(--color-white);
+  border: 2px solid var(--color-mischka);
+  color: var(--color-storm-gray);
+  font-family: var(--font-ui);
+  font-size: var(--font-size--sm);
+  font-weight: var(--font-weight--bold);
+  margin-bottom: var(--spacing--xs);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.skat-step-indicator__label {
+  font-family: var(--font-ui);
+  font-size: var(--font-size--xs);
+  color: var(--color-storm-gray);
+  text-align: center;
+  transition: color 0.2s;
+}
+
+/* Active step */
+.skat-step-indicator__item--active .skat-step-indicator__number {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.skat-step-indicator__item--active .skat-step-indicator__label {
+  color: var(--color-primary);
+  font-weight: var(--font-weight--bold);
+}
+
+/* Completed step */
+.skat-step-indicator__item--completed .skat-step-indicator__number {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: var(--color-white);
+}
+
+.skat-step-indicator__item--completed .skat-step-indicator__label {
+  color: var(--color-mulled-wine);
+}
+
+/* Connecting line segment turns blue for completed steps */
+.skat-step-indicator__item--completed + .skat-step-indicator__item .skat-step-indicator__number::before {
+  background-color: var(--color-secondary);
+}

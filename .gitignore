@@ -1,0 +1,88 @@
+# === Java ===
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# === Maven ===
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# === Spring Boot ===
+spring-shell.log
+*.log
+
+# === IDE — IntelliJ IDEA ===
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# === IDE — Eclipse ===
+.classpath
+.project
+.settings/
+.factorypath
+
+# === IDE — VS Code ===
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/*.code-snippets
+*.code-workspace
+
+# === OS ===
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# === Docker ===
+.docker/
+
+# === Environment files (never commit secrets) ===
+.env
+.env.local
+.env.*.local
+*.env
+
+# === Observability config (generated) ===
+config/grafana/provisioning/dashboards/**/*.json
+
+# === Dependency check report ===
+dependency-check-report.*
+
+# === SonarCloud ===
+.sonar/
+
+# === JaCoCo ===
+jacoco.exec
+
+# === OWASP ===
+owasp-suppressions.xml.bak
+
+# === Catala (compiled output only) ===
+src/main/catala/**/*.ml
+src/main/catala/**/*.mli
+
+# === k8s secrets (never commit) ===
+k8s/secrets/
+k8s/**/*-secret.yaml
+
+# === MkDocs generated site ===
+docs/site/
+
+# === Playwright CLI ===
+.playwright-cli/

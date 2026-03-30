@@ -1,0 +1,55 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: osm2-taxable-person-portal
+  thymeleaf:
+    cache: false
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: ${OIDC_CLIENT_ID:osm2-taxable-person-portal}
+            client-secret: ${OIDC_CLIENT_SECRET:[TODO]}
+            scope: openid,profile,email
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          keycloak:
+            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/osm2}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  structured:
+    format:
+      console: logstash
+  level:
+    root: INFO
+    dk.osm2: DEBUG
+
+otel:
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  service:
+    name: ${spring.application.name}
+
+osm2:
+  services:
+    scheme-service:
+      base-url: ${SCHEME_SERVICE_URL:http://localhost:8081}
+    registration-service:
+      base-url: ${REGISTRATION_SERVICE_URL:http://localhost:8082}
+    return-service:
+      base-url: ${RETURN_SERVICE_URL:http://localhost:8083}

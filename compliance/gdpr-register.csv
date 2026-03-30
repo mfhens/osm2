@@ -1,0 +1,19 @@
+# GDPR Data Register — osm2
+# Managed by: gdpr-database-compliance-auditor
+# Classification levels: Fortrolige (Confidential), Almindelige (Ordinary), Interne (Internal), Ikke-persondata (Non-personal)
+# This file is a STUB. Run gdpr-database-compliance-auditor to populate with evidence-based findings.
+# Do not remove the header row. Add one row per table/column group that stores personal data.
+#
+# Columns:
+#   table_or_entity    - database table or data entity name
+#   column_or_field    - specific column(s) or "all" if the entire entity is classified
+#   gdpr_category      - one of: Fortrolige | Almindelige | Interne | Ikke-persondata
+#   data_subject       - who the data describes (e.g. "OSM contributor", "API consumer", "operator")
+#   legal_basis        - legal basis for processing (e.g. "Legitimate interest", "Consent", "N/A")
+#   retention_days     - how many days the data is retained (-1 = indefinite, 0 = not retained)
+#   notes              - free-text notes
+#   stub               - TRUE if this row is a placeholder, FALSE if evidence-based
+table_or_entity,column_or_field,gdpr_category,data_subject,legal_basis,retention_days,notes,stub
+osm_changesets,user_id,Almindelige,OSM contributor,Legitimate interest,-1,"OSM user IDs are public but linked to real individuals. Classification to be confirmed.",TRUE
+osm_changesets,username,Almindelige,OSM contributor,Legitimate interest,-1,"OSM usernames are public. Confirm whether the system stores them or only IDs.",TRUE
+api_access_logs,ip_address,Interne,API consumer,Legitimate interest,90,"IP addresses are personal data under GDPR. Retention period is a placeholder.",TRUE

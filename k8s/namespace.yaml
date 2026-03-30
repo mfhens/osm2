@@ -1,0 +1,8 @@
+# k8s/namespace.yaml — osm2 Kubernetes namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: osm2
+  labels:
+    app.kubernetes.io/managed-by: kubectl
+    environment: "[TODO: dev|staging|production]"

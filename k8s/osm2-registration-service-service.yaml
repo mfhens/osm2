@@ -1,0 +1,16 @@
+# k8s/osm2-registration-service-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: osm2-registration-service
+  namespace: osm2
+  labels:
+    app: osm2-registration-service
+spec:
+  selector:
+    app: osm2-registration-service
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
+  type: ClusterIP

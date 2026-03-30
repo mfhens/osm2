@@ -1,0 +1,240 @@
+# docker-compose.yml — osm2 full application stack
+# Services: 8 osm2 modules + Keycloak 24.0 + PostgreSQL 18 Alpine + immudb
+# Usage: docker compose up -d
+# Note: For observability stack, use docker-compose.observability.yml
+# Note: Images are tagged with Git SHA — set IMAGE_TAG env var or default to 'dev'
+
+version: "3.9"
+
+x-osm2-common-env: &osm2-common-env
+  KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/osm2
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+  OTEL_METRICS_EXPORTER: otlp
+  OTEL_LOGS_EXPORTER: otlp
+  SPRING_PROFILES_ACTIVE: docker
+
+services:
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: osm2-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: osm2_admin
+      POSTGRES_PASSWORD: osm2_admin
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./config/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U osm2_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  immudb:
+    image: codenotary/immudb:latest
+    container_name: osm2-immudb
+    restart: unless-stopped
+    ports:
+      - "3322:3322"   # gRPC
+      - "8094:8080"   # REST API (mapped to 8094 externally)
+      - "9497:9497"   # Prometheus metrics
+    volumes:
+      - immudb-data:/var/lib/immudb
+    healthcheck:
+      test: ["CMD", "immuadmin", "status"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: osm2-keycloak
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/osm2_keycloak
+      KC_DB_USERNAME: osm2_keycloak
+      KC_DB_PASSWORD: osm2_keycloak
+    volumes:
+      - ./config/keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  osm2-scheme-service:
+    build:
+      context: ./osm2-scheme-service
+      dockerfile: Dockerfile
+    image: osm2/scheme-service:${IMAGE_TAG:-dev}
+    container_name: osm2-scheme-service
+    restart: unless-stopped
+    environment:
+      <<: *osm2-common-env
+      DB_HOST: postgres
+      DB_NAME: osm2_scheme
+      DB_USER: osm2_scheme
+      DB_PASSWORD: osm2_scheme
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  osm2-registration-service:
+    build:
+      context: ./osm2-registration-service
+      dockerfile: Dockerfile
+    image: osm2/registration-service:${IMAGE_TAG:-dev}
+    container_name: osm2-registration-service
+    restart: unless-stopped
+    environment:
+      <<: *osm2-common-env
+      DB_HOST: postgres
+      DB_NAME: osm2_registration
+      DB_USER: osm2_registration
+      DB_PASSWORD: osm2_registration
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  osm2-return-service:
+    build:
+      context: ./osm2-return-service
+      dockerfile: Dockerfile
+    image: osm2/return-service:${IMAGE_TAG:-dev}
+    container_name: osm2-return-service
+    restart: unless-stopped
+    environment:
+      <<: *osm2-common-env
+      DB_HOST: postgres
+      DB_NAME: osm2_return
+      DB_USER: osm2_return
+      DB_PASSWORD: osm2_return
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      osm2-registration-service:
+        condition: service_started
+
+  osm2-payment-service:
+    build:
+      context: ./osm2-payment-service
+      dockerfile: Dockerfile
+    image: osm2/payment-service:${IMAGE_TAG:-dev}
+    container_name: osm2-payment-service
+    restart: unless-stopped
+    environment:
+      <<: *osm2-common-env
+      DB_HOST: postgres
+      DB_NAME: osm2_payment
+      DB_USER: osm2_payment
+      DB_PASSWORD: osm2_payment
+      IMMUDB_HOST: immudb
+      IMMUDB_GRPC_PORT: 3322
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      immudb:
+        condition: service_healthy
+
+  osm2-records-service:
+    build:
+      context: ./osm2-records-service
+      dockerfile: Dockerfile
+    image: osm2/records-service:${IMAGE_TAG:-dev}
+    container_name: osm2-records-service
+    restart: unless-stopped
+    environment:
+      <<: *osm2-common-env
+      DB_HOST: postgres
+      DB_NAME: osm2_records
+      DB_USER: osm2_records
+      DB_PASSWORD: osm2_records
+    ports:
+      - "8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  osm2-taxable-person-portal:
+    build:
+      context: ./osm2-taxable-person-portal
+      dockerfile: Dockerfile
+    image: osm2/taxable-person-portal:${IMAGE_TAG:-dev}
+    container_name: osm2-taxable-person-portal
+    restart: unless-stopped
+    environment:
+      <<: *osm2-common-env
+      OIDC_CLIENT_ID: osm2-taxable-person-portal
+      OIDC_CLIENT_SECRET: ${TAXABLE_PORTAL_CLIENT_SECRET:-[TODO]}
+      SCHEME_SERVICE_URL: http://osm2-scheme-service:8081
+      REGISTRATION_SERVICE_URL: http://osm2-registration-service:8082
+      RETURN_SERVICE_URL: http://osm2-return-service:8083
+    ports:
+      - "8090:8090"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      osm2-scheme-service:
+        condition: service_started
+      osm2-registration-service:
+        condition: service_started
+
+  osm2-authority-portal:
+    build:
+      context: ./osm2-authority-portal
+      dockerfile: Dockerfile
+    image: osm2/authority-portal:${IMAGE_TAG:-dev}
+    container_name: osm2-authority-portal
+    restart: unless-stopped
+    environment:
+      <<: *osm2-common-env
+      OIDC_CLIENT_ID: osm2-authority-portal
+      OIDC_CLIENT_SECRET: ${AUTHORITY_PORTAL_CLIENT_SECRET:-[TODO]}
+      SCHEME_SERVICE_URL: http://osm2-scheme-service:8081
+      REGISTRATION_SERVICE_URL: http://osm2-registration-service:8082
+      RETURN_SERVICE_URL: http://osm2-return-service:8083
+      PAYMENT_SERVICE_URL: http://osm2-payment-service:8084
+      RECORDS_SERVICE_URL: http://osm2-records-service:8085
+    ports:
+      - "8091:8091"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  immudb-data:
+
+networks:
+  default:
+    name: osm2-network

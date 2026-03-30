@@ -1,0 +1,103 @@
+{
+  "realm": "osm2",
+  "displayName": "One Stop Moms 2",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionMaxLifespan": 36000,
+  "clients": [
+    {
+      "clientId": "osm2-taxable-person-portal",
+      "name": "OSM2 Taxable Person Portal",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8090/*",
+        "[TODO: production URL]/*"
+      ],
+      "webOrigins": ["+"],
+      "protocol": "openid-connect",
+      "secret": "[TODO: set via Keycloak admin or environment variable]"
+    },
+    {
+      "clientId": "osm2-authority-portal",
+      "name": "OSM2 Authority Portal (Skatteforvaltningen)",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8091/*",
+        "[TODO: production URL]/*"
+      ],
+      "webOrigins": ["+"],
+      "protocol": "openid-connect",
+      "secret": "[TODO: set via Keycloak admin or environment variable]"
+    },
+    {
+      "clientId": "osm2-service-account",
+      "name": "OSM2 Service-to-Service Account",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect",
+      "secret": "[TODO: set via Keycloak admin or environment variable]"
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "TAXABLE_PERSON",
+        "description": "Role for registered taxable persons and intermediaries"
+      },
+      {
+        "name": "CASEWORKER",
+        "description": "Role for Skatteforvaltningen caseworkers"
+      },
+      {
+        "name": "SERVICE",
+        "description": "Role for service-to-service internal API access"
+      },
+      {
+        "name": "SUPERVISOR",
+        "description": "Role for supervisory caseworkers with elevated access"
+      }
+    ]
+  },
+  "identityProviders": [
+    {
+      "alias": "mitid-nemlogin",
+      "displayName": "MitID / NemLog-in",
+      "providerId": "oidc",
+      "enabled": true,
+      "trustEmail": true,
+      "config": {
+        "clientId": "[TODO: MitID client ID]",
+        "clientSecret": "[TODO: MitID client secret]",
+        "authorizationUrl": "[TODO: MitID authorization endpoint]",
+        "tokenUrl": "[TODO: MitID token endpoint]",
+        "defaultScopes": "openid profile"
+      }
+    }
+  ],
+  "browserSecurityHeaders": {
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xContentTypeOptions": "nosniff",
+    "xRobotsTag": "none",
+    "xFrameOptions": "SAMEORIGIN",
+    "xXSSProtection": "1; mode=block",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+  }
+}

@@ -1,0 +1,89 @@
+# Architecture Policies for osm2
+# Evaluated by: c4-model-validator, c4-architecture-governor
+# Severity levels: blocking (halts pipeline), warning (non-blocking), info (advisory)
+# Add new policies by appending to this list. Do not remove existing ones without an ADR.
+
+version: "1.0"
+policies:
+
+  - id: ARCH-001
+    name: bounded-context-isolation
+    severity: blocking
+    description: >
+      No direct cross-bounded-context data access. A service must not query
+      a database owned by a different bounded context. Use APIs or events instead.
+
+  - id: ARCH-002
+    name: external-system-classification
+    severity: blocking
+    description: >
+      All external systems declared in workspace.dsl must carry at least one
+      classification tag: internal, external, third-party, or public.
+
+  - id: ARCH-003
+    name: trust-boundary-enforcement
+    severity: blocking
+    description: >
+      Data crossing a zone or network boundary must route through a declared
+      trust boundary element (API gateway, BFF, adapter). Direct cross-boundary
+      calls without a boundary element are forbidden.
+
+  - id: ARCH-004
+    name: no-orphaned-containers
+    severity: blocking
+    description: >
+      Every container must participate in at least one declared relationship
+      (as source or target). A container with no relationships is undeclared
+      architectural drift.
+
+  - id: ARCH-005
+    name: deployment-view-required
+    severity: blocking
+    description: >
+      Every container must appear in at least one deploymentEnvironment view
+      before the feature reaches the deployment gate.
+
+  - id: ARCH-006
+    name: descriptions-required
+    severity: warning
+    description: >
+      All containers, components, and relationships must carry a non-empty
+      description. Blank descriptions degrade diagram readability and downstream
+      documentation quality.
+
+  - id: ARCH-007
+    name: technology-tags-required
+    severity: warning
+    description: >
+      All containers must carry a technology tag (e.g., "Python", "PostgreSQL",
+      "FastAPI", "Apache Airflow"). Technology tags make the model actionable for
+      infrastructure and security reviews.
+
+  # --- osm2-specific policies ---
+
+  - id: ARCH-008
+    name: pii-datastore-tagging
+    severity: blocking
+    description: >
+      Any datastore that persists personal data (including OSM contributor
+      identifiers, changeset metadata linked to users, or IP addresses) must
+      carry the tag "pii:true". Datastores confirmed to hold no personal data
+      must carry "pii:false". The value "pii:unknown" is only permitted in
+      stubs and must be resolved before the production deployment gate.
+
+  - id: ARCH-009
+    name: geodata-lineage-required
+    severity: warning
+    description: >
+      Every container that transforms or stores geodata must carry a lineage
+      tag describing its upstream source (e.g., "source:osm", "source:derived").
+      Lineage tags support audit and reproducibility requirements.
+
+  # [STUB — add further project-specific policies below this line]
+  # Example:
+  # - id: ARCH-010
+  #   name: incremental-update-boundary
+  #   severity: warning
+  #   description: >
+  #     Changeset processing must be isolated to a dedicated container and must
+  #     not share a write path with the full-dump ingestion pipeline.

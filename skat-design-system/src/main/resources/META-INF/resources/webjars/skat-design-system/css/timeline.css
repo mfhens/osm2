@@ -1,0 +1,294 @@
+/* Petition 050 — Unified Case Timeline CSS
+   Card-based layout with category color coding. WCAG 2.1 AA compliant. */
+
+/* ==========================================================================
+   CARD WRAPPER
+   ========================================================================== */
+
+.skat-timeline-card {
+  background: #ffffff;
+  border: 1px solid #d0d0d8;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+/* ==========================================================================
+   ENTRY LIST
+   ========================================================================== */
+
+.skat-timeline-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ==========================================================================
+   ENTRY — 2-column grid: aside (timestamp + badge) | body (content)
+   ========================================================================== */
+
+.skat-timeline-entry {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  border-bottom: 1px solid #e5e5e5;
+  border-left: 4px solid #d0d0d8; /* default, overridden per category */
+}
+
+.skat-timeline-entry:last-child {
+  border-bottom: none;
+}
+
+/* --- Category-colored left borders (match badge colors) --- */
+.skat-timeline-entry--case           { border-left-color: #005b99; }
+.skat-timeline-entry--debt_lifecycle { border-left-color: #6a1b9a; }
+.skat-timeline-entry--financial      { border-left-color: #1b5e20; }
+.skat-timeline-entry--collection     { border-left-color: #bf360c; }
+.skat-timeline-entry--correspondence { border-left-color: #0277bd; }
+.skat-timeline-entry--objection      { border-left-color: #e65100; }
+.skat-timeline-entry--journal        { border-left-color: #37474f; }
+
+/* --- Aside: timestamp stacked above badge --- */
+.skat-timeline-entry__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  background: #f8f8fa;
+  border-right: 1px solid #e5e5e5;
+}
+
+.skat-timeline-timestamp {
+  font-size: 0.8rem;
+  color: #72728a;
+  white-space: nowrap;
+}
+
+/* --- Body: title, description, meta --- */
+.skat-timeline-entry__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+}
+
+.skat-timeline-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #14143c;
+}
+
+.skat-timeline-description {
+  margin: 0;
+  color: #434363;
+  font-size: 0.9rem;
+}
+
+/* Meta row: amount, debt link, performer */
+.skat-timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1.25rem;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: #72728a;
+}
+
+.skat-timeline-amount {
+  font-weight: 600;
+  color: #1b5e20;
+}
+
+/* ==========================================================================
+   BADGE MODIFIERS — distinct background + white text (WCAG 2.1 AA)
+   ========================================================================== */
+
+.skat-badge--timeline-case           { background-color: #005b99; color: #ffffff; }
+.skat-badge--timeline-debt_lifecycle { background-color: #6a1b9a; color: #ffffff; }
+.skat-badge--timeline-financial      { background-color: #1b5e20; color: #ffffff; }
+.skat-badge--timeline-collection     { background-color: #bf360c; color: #ffffff; }
+.skat-badge--timeline-correspondence { background-color: #0277bd; color: #ffffff; }
+.skat-badge--timeline-objection      { background-color: #e65100; color: #ffffff; }
+.skat-badge--timeline-journal        { background-color: #37474f; color: #ffffff; }
+
+/* ==========================================================================
+   FILTER DISCLOSURE
+   ========================================================================== */
+
+.skat-timeline-filter-disclosure {
+  margin-bottom: 0.75rem;
+}
+
+.skat-timeline-filter-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #005b99;
+  border: 1px solid #005b99;
+  border-radius: 4px;
+  list-style: none;
+  user-select: none;
+}
+
+.skat-timeline-filter-summary::-webkit-details-marker { display: none; }
+
+.skat-timeline-filter-summary__indicator {
+  font-size: 0.7rem;
+  transition: transform 0.15s ease;
+}
+
+.skat-timeline-filter-disclosure[open] .skat-timeline-filter-summary__indicator {
+  transform: rotate(180deg);
+}
+
+/* ==========================================================================
+   FILTER BAR (inside disclosure)
+   ========================================================================== */
+
+.skat-timeline-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.skat-timeline-filter-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 0;
+}
+
+.skat-timeline-filter-group label,
+.skat-timeline-filter-group .skat-legend {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.skat-timeline-filter-group--categories {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+/* Horizontal wrap for category checkboxes */
+.skat-timeline-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.skat-timeline-checkbox-group .skat-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.skat-timeline-checkbox-group .skat-checkbox__label {
+  font-size: 0.85rem;
+}
+
+/* Dates + debt + submit on one row */
+.skat-timeline-filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.skat-timeline-filter-control {
+  display: block;
+  inline-size: 11rem;
+  max-inline-size: 100%;
+}
+
+.skat-timeline-filter-submit {
+  min-width: 6rem;
+  height: 2.25rem;
+  align-self: flex-end;
+}
+
+/* ==========================================================================
+   FILTER CHIPS
+   ========================================================================== */
+
+.skat-timeline-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.skat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  background: #e3f2fd;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+}
+
+.skat-chip__remove {
+  text-decoration: none;
+  color: #72728a;
+}
+
+.skat-chip__remove:hover {
+  color: #14143c;
+}
+
+/* ==========================================================================
+   EMPTY STATE
+   ========================================================================== */
+
+.skat-timeline-empty {
+  padding: 2.5rem;
+  text-align: center;
+  color: #72728a;
+  font-style: italic;
+}
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .skat-timeline-entry {
+    grid-template-columns: 1fr;
+  }
+
+  .skat-timeline-entry__aside {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    border-right: none;
+    border-bottom: 1px solid #e5e5e5;
+    background: #f8f8fa;
+    gap: 0.5rem;
+  }
+
+  .skat-timeline-filter-bar {
+    align-items: stretch;
+  }
+
+  .skat-timeline-filter-group--categories,
+  .skat-timeline-filter-control,
+  .skat-timeline-filter-submit {
+    width: 100%;
+    max-width: none;
+  }
+
+  .skat-timeline-checkbox-group {
+    grid-template-columns: 1fr;
+  }
+}

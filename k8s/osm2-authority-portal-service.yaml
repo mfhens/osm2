@@ -1,0 +1,16 @@
+# k8s/osm2-authority-portal-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: osm2-authority-portal
+  namespace: osm2
+  labels:
+    app: osm2-authority-portal
+spec:
+  selector:
+    app: osm2-authority-portal
+  ports:
+    - protocol: TCP
+      port: 8091
+      targetPort: 8091
+  type: ClusterIP

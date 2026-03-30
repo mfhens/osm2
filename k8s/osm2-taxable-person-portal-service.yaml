@@ -1,0 +1,16 @@
+# k8s/osm2-taxable-person-portal-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: osm2-taxable-person-portal
+  namespace: osm2
+  labels:
+    app: osm2-taxable-person-portal
+spec:
+  selector:
+    app: osm2-taxable-person-portal
+  ports:
+    - protocol: TCP
+      port: 8090
+      targetPort: 8090
+  type: ClusterIP

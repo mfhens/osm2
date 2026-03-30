@@ -1,0 +1,19 @@
+# docker-compose.structurizr.yml — Structurizr Lite for local architecture diagram viewing
+# Usage: docker compose -f docker-compose.structurizr.yml up -d
+# Access: http://localhost:8978
+
+version: "3.9"
+
+services:
+  structurizr:
+    image: structurizr/lite:3.1.0
+    container_name: osm2-structurizr
+    restart: unless-stopped
+    volumes:
+      - ./architecture:/usr/local/structurizr:ro
+    ports:
+      - "8978:8080"
+
+networks:
+  default:
+    name: osm2-structurizr-network

@@ -1,0 +1,16 @@
+# k8s/osm2-scheme-service-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: osm2-scheme-service
+  namespace: osm2
+  labels:
+    app: osm2-scheme-service
+spec:
+  selector:
+    app: osm2-scheme-service
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+  type: ClusterIP

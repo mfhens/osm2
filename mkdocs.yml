@@ -1,0 +1,67 @@
+# mkdocs.yml — osm2 documentation site
+# Usage: mkdocs serve (local) | mkdocs build (static site to docs/site/)
+# Theme: Material for MkDocs (pip install mkdocs-material)
+
+site_name: "osm2 — One Stop Moms 2"
+site_description: "Danish VAT One Stop Shop Administration System — Technical Documentation"
+site_author: "Skatteforvaltningen / [TODO: organisation name]"
+docs_dir: docs
+site_dir: docs/site
+
+theme:
+  name: material
+  language: da
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Architecture:
+    - Overview: architecture-overview.md
+    - Architecture Decision Records:
+      - "0001 — Architecture Principles": adr/0001-architecture-principles.md
+      - "0002 — Microservices": adr/0002-microservices-architecture.md
+      - "0004 — API-First OpenAPI 3.1": adr/0004-api-first-openapi.md
+      - "0005 — Keycloak OIDC": adr/0005-keycloak-oidc-auth.md
+      - "0006 — Kubernetes": adr/0006-kubernetes-deployment.md
+      - "0007 — No Cross-Service DB": adr/0007-no-cross-service-db-access.md
+      - "0011 — PostgreSQL": adr/0011-postgresql-database.md
+      - "0013 — Audit & History": adr/0013-audit-history.md
+      - "0014 — GDPR PII Isolation": adr/0014-gdpr-registration-service-pii-silo.md
+      - "0018 — Double-Entry Bookkeeping": adr/0018-double-entry-bookkeeping.md
+      - "0019 — Orchestration over Events": adr/0019-orchestration-over-events.md
+      - "0024 — OTel + Grafana": adr/0024-otel-grafana-observability.md
+      - "0025 — Maven": adr/0025-maven-build-tool.md
+      - "0026 — Resilience4j": adr/0026-resilience4j-circuit-breaker.md
+      - "0029 — immudb Ledger": adr/0029-immudb-tamper-evident-ledger.md
+      - "0031 — Statutory Enums": adr/0031-statutory-codes-as-enums.md
+      - "0032 — Catala Oracle": adr/0032-catala-oracle-only.md
+  - Petitions:
+    - "OSS-01 — Scheme Eligibility": ../petitions/OSS-01/OSS-01.md
+    - "OSS-02 — Registration": ../petitions/OSS-02/OSS-02.md
+    - "OSS-03 — Deregistration": ../petitions/OSS-03/OSS-03.md
+    - "OSS-04 — VAT Returns": ../petitions/OSS-04/OSS-04.md
+    - "OSS-05 — Payments": ../petitions/OSS-05/petition.md
+    - "OSS-06 — Records": ../petitions/OSS-06/OSS-06.md
+  - References:
+    - "DA16 — Moms One Stop Shop": references/DA16-moms-one-stop-shop.md
+  - Compliance:
+    - "GDPR Register": ../compliance/gdpr-register.csv
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.tabbed
+
+plugins:
+  - search

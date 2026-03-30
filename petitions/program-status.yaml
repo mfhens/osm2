@@ -1,0 +1,146 @@
+# Program Status — osm2
+# Managed by: backlog-planner, sprint-tracker
+# Do not edit manually unless correcting a tracking error.
+# Fields:
+#   petitions: list of petition delivery records (populated by backlog-planner)
+#   technical_backlog: list of TB-* technical backlog items (populated by tech-debt-executor)
+
+program: osm2
+last_updated: "2026-03-30"
+
+petitions:
+  - id: OSS-01
+    title: "Juridisk grundlag, skemavurdering og definitioner"
+    status: draft
+    created: "2026-03-30"
+    artifacts:
+      petition: petitions/OSS-01/OSS-01.md
+      outcome_contract: petitions/OSS-01/OSS-01-outcome-contract.md
+      feature_file: petitions/OSS-01/OSS-01.feature
+    gherkin_scenarios: 27
+    functional_requirements: 8
+    legal_basis:
+      - "ML §§ 66, 66a, 66d, 66m, 66-66u"
+      - "MSD artikler 358, 358a, 369a, 369l"
+      - "Gennemførelsesforordning 282/2011 artikel 57a"
+      - "Direktiv 2008/8/EF artikel 5"
+      - "Direktiv 2017/2455 artikel 2"
+      - "Direktiv 2019/1995"
+      - "Forordning 904/2010 artikler 47a-47l"
+      - "Lov nr. 810 af 9. juni 2020"
+    notes: >
+      Covers scheme eligibility determination, all formal definitions, and legal hierarchy
+      (Ikke-EU-ordning, EU-ordning, Importordning). Establishes the foundational classification
+      layer that all subsequent petitions (registration, filing, payment, record-keeping) depend on.
+      Out of scope: registration flows (OSS-02), VAT return filing, payment processing, record-keeping.
+
+  - id: OSS-02
+    title: "Registrering og afmeldelse — Ikke-EU-ordning og EU-ordning"
+    status: draft
+    created: "2026-03-30"
+    artifacts:
+      petition: petitions/OSS-02/OSS-02.md
+      outcome_contract: petitions/OSS-02/OSS-02-outcome-contract.md
+      feature_file: petitions/OSS-02/OSS-02.feature
+    gherkin_scenarios: 42
+    functional_requirements: 38
+    legal_basis:
+      - "ML §§ 66a–66j"
+      - "Momsbekendtgørelsen §§ 115–119"
+      - "Momsforordningen artikler 57d–58c"
+      - "Direktiv 2017/2455"
+      - "Direktiv 2019/1995"
+    notes: >
+      Covers full registration lifecycle for Non-EU and EU schemes.
+      EU binding rule (current year + 2) enforced as explicit state-machine constraint.
+      Import scheme (OSS-03) is out of scope.
+
+  - id: OSS-03
+    title: "Registrering og afmeldelse — Importordning"
+    status: draft
+    created: "2026-03-30"
+    artifacts:
+      petition: petitions/OSS-03/OSS-03.md
+      outcome_contract: petitions/OSS-03/OSS-03-outcome-contract.md
+      feature_file: petitions/OSS-03/OSS-03.feature
+    gherkin_scenarios: 45
+    functional_requirements: 14
+    legal_basis:
+      - "ML §§ 66l–66t"
+      - "Momsforordningen artikler 58b, 58c, 60a, 369q"
+      - "Momssystemdirektivet artikler 369l–369w"
+      - "Direktiv 2017/2455"
+      - "Direktiv 2019/1995"
+    notes: >
+      Covers Import scheme registration lifecycle including intermediary role, joint liability,
+      €150 per-consignment threshold, monthly cadence, and cascade exclusion.
+      Architecturally distinct from OSS-02 (Non-EU/EU): intermediary joint liability requires
+      explicit data-model ownership. Depends on OSS-01 for eligibility classification.
+
+  - id: OSS-04
+    title: "Momsangivelse og korrektioner"
+    status: requirements
+    created: "2026-03-31"
+    artifacts:
+      petition: petitions/OSS-04/OSS-04.md
+      outcome_contract: petitions/OSS-04/OSS-04-outcome-contract.md
+      feature_file: petitions/OSS-04/OSS-04.feature
+    gherkin_scenarios: 39
+    functional_requirements: 18
+    legal_basis:
+      - "ML §§ 66g, 66p"
+      - "Momsbekendtgørelsen §§ 116–121"
+      - "Momsforordningen (EU) 2019/2026 artikler 59–61a"
+      - "Direktiv 2017/2455"
+      - "Direktiv 2019/1995"
+      - "Gennemførelsesforordning (EU) 2020/194 bilag III"
+    notes: >
+      Covers complete VAT return filing for all three OSS schemes (Non-EU, EU, Import).
+      Highest-complexity path: correction window / final-return intersection across three
+      temporal boundaries. ECB-rate-at-period-end rule (not payment date) is FR-3.2/FR-3.3.
+      Out of scope: payment processing (OSS-05), record-keeping (OSS-06).
+
+  - id: OSS-05
+    title: "Betaling, refusion og rykkere"
+    status: draft
+    created: "2026-03-30"
+    artifacts:
+      petition: petitions/OSS-05/petition.md
+      outcome_contract: petitions/OSS-05/outcome-contract.md
+      feature_file: petitions/OSS-05/OSS-05.feature
+    gherkin_scenarios: 24
+    functional_requirements: 13
+    legal_basis:
+      - "ML §§ 66g stk. 1, 66p stk. 3"
+      - "Momssystemdirektivet artikler 367, 369i, 369v"
+      - "Momsforordningen artikler 62–63b"
+      - "Gennemførelsesforordning (EU) 2019/2026"
+    notes: >
+      Covers payment processing, overpayment refunds, ECB-rate-at-period-end enforcement,
+      day-10 late-payment reminders, consumption-state coordination, and Import scheme joint
+      liability. ECB rate (last day of period, not payment date) is the highest-risk
+      implementation error — explicitly tested in SC-08 and SC-09. Depends on OSS-04.
+
+  - id: OSS-06
+    title: "Regnskab og dokumentation"
+    status: draft
+    created: "2026-03-30"
+    artifacts:
+      petition: petitions/OSS-06/OSS-06.md
+      outcome_contract: petitions/OSS-06/OSS-06-outcome-contract.md
+      feature_file: petitions/OSS-06/OSS-06.feature
+    gherkin_scenarios: 29
+    functional_requirements: 24
+    legal_basis:
+      - "ML §§ 66h, 66r"
+      - "Momssystemdirektivet artikler 369, 369k, 369x"
+      - "Momsforordningen artikel 63c"
+      - "Gennemførelsesforordning (EU) 2019/2026"
+    notes: >
+      Covers 10-year statutory record retention with immediate per-item electronic accessibility.
+      Dual-access model: identification member state (full) and each consumption member state
+      (scoped). Records remain accessible post-deregistration. Hot-storage constraint (no cold
+      archive within retention window) has significant infrastructure implications for OSS-02/03/04
+      data models. Depends on all preceding petitions.
+
+technical_backlog: []
