@@ -1,0 +1,9 @@
+# Demo profile — loaded when SPRING_PROFILES_ACTIVE=demo
+# Adds the db/seed Flyway location so V9001__seed_demo_data.sql runs after schema migrations.
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
+
+logging:
+  level:
+    dk.osm2: DEBUG

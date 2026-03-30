@@ -67,6 +67,14 @@ workspace "osm2" "One Stop Moms 2 — Danish VAT One Stop Shop system implementi
             tags "external" "third-party"
         }
 
+        nemKonto = softwareSystem "NemKonto" "Danish government payment infrastructure. Used by osm2-payment-service to disburse VAT refunds and payments. mTLS with OCES3 certificate." "External System" {
+            tags "external" "third-party"
+        }
+
+        fordringssystem = softwareSystem "SKATs Fordringssystem" "Danish debt enforcement system. Receives enforcement handover from osm2-payment-service for overdue accounts. mTLS with OCES3 certificate." "External System" {
+            tags "external" "third-party"
+        }
+
         otelCollector = softwareSystem "OTel Collector + Grafana Stack" "OpenTelemetry Collector, Tempo (traces), Loki (logs), Prometheus (metrics), Grafana (dashboards)." "External System" {
             tags "internal" "third-party"
         }
@@ -110,6 +118,8 @@ workspace "osm2" "One Stop Moms 2 — Danish VAT One Stop Shop system implementi
         keycloak -> mitid "Delegates authentication to" "OIDC Federation"
         paymentService -> ecbApi "Fetches daily EUR exchange rates from" "HTTPS / REST"
         paymentService -> memberStateCms "Distributes VAT payments to" "HTTPS / REST (OCES3 mTLS)"
+        paymentService -> nemKonto "Disburses refunds and payments via" "SOAP / mTLS (OCES3 — dk.ufst:oces3-certificate-parser)"
+        paymentService -> fordringssystem "Hands over overdue accounts to" "SOAP / mTLS (OCES3 — dk.ufst:oces3-certificate-parser)"
 
         // --- Observability ---
         schemeService -> otelCollector "Exports traces, metrics, logs to" "OTLP / gRPC"

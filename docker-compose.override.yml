@@ -1,0 +1,35 @@
+# docker-compose.override.yml — activates the "demo" Spring profile for all services.
+# Run with: docker compose up  (override is picked up automatically)
+# To disable demo mode: remove this file or pass --file docker-compose.yml explicitly.
+
+version: "3.9"
+
+services:
+
+  osm2-scheme-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+
+  osm2-registration-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+
+  osm2-return-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+
+  osm2-payment-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+
+  osm2-records-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+
+  osm2-taxable-person-portal:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+
+  osm2-authority-portal:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo

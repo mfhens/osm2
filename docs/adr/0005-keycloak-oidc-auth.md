@@ -22,7 +22,16 @@ Keycloak 24.0 is the central OIDC/OAuth2 identity provider for osm2.
 - Caseworkers authenticate via **OCES3** through a Keycloak IdP mapper. Client certificate extraction is handled at the Keycloak level.
 - Service-to-service calls use the **Client Credentials Flow**. The resulting token carries the `SERVICE` role, which gates access to `/internal/**` endpoints on all backend services.
 
-All backend services validate JWT bearer tokens via Spring Security's `spring-boot-starter-oauth2-resource-server`. The JWKS endpoint is `http://keycloak:8080/realms/osm2/protocol/openid-connect/certs`.
+All backend services validate JWT bearer tokens using the `keycloak-oauth2-starter` library (`dk.ufst:keycloak-oauth2-starter`), which encapsulates the repeated `SecurityFilterChain` boilerplate. The starter exposes two profile-gated beans:
+
+| Bean | Active profiles | Behaviour |
+|---|---|---|
+| `keycloakSecuredFilterChain` | `!local & !dev & !demo` | Stateless JWT resource server; CSRF disabled; actuator + Swagger open |
+| `keycloakPermissiveFilterChain` | `local \| dev \| demo` | Permits all requests — no auth required for local / demo runs |
+
+The JWKS endpoint is `http://keycloak:8080/realms/osm2/protocol/openid-connect/certs`.
+
+Portals (`osm2-taxable-person-portal`, `osm2-authority-portal`) do **not** use this starter — they use the OAuth2 client browser-SSO flow (`spring-boot-starter-oauth2-client`) and manage their own `SecurityFilterChain`.
 
 The realm configuration is version-controlled in `config/keycloak/osm2-realm.json` and imported automatically on Keycloak container startup via `--import-realm`.
 
@@ -47,3 +56,4 @@ Keycloak roles mapped to osm2 business roles:
 - Keycloak is a critical dependency: if Keycloak is unavailable, no user or service can authenticate. Must be deployed with high availability in production (active-passive minimum).
 - Keycloak upgrade cycles must be coordinated with the MitID/NemLog-in IdP configuration, which may have compatibility constraints.
 - The realm export must be kept in sync with live Keycloak configuration; divergence is a risk in environments with manual configuration changes.
+- In `demo` / `dev` / `local` profiles the permissive chain is active — **no JWT is present in the SecurityContext**. `AuditorAware` implementations must return a sensible fallback (e.g. `"demo-user"`) rather than throwing when the context is empty.

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    Standalone library — OCES3 Certificate Parser
+    ==============================================
+    Parses Danish OCES3 X.509 certificates used in SOAP/mTLS e-government integrations.
+    Handles RFC2253 DN parsing, OCES3 identity extraction, and Spring Boot auto-wiring.
+
+    No parent POM — can be used by any Maven project outside OpenDebt.
+
+    Install to local Maven repo:
+      mvn install
+
+    Deploy to GitHub Packages:
+      mvn deploy
+
+    Usage — add to pom.xml:
+      <dependency>
+        <groupId>dk.ufst</groupId>
+        <artifactId>oces3-certificate-parser</artifactId>
+        <version>1.0</version>
+      </dependency>
+  -->
+
+  <groupId>dk.ufst</groupId>
+  <artifactId>oces3-certificate-parser</artifactId>
+  <version>1.0</version>
+  <packaging>jar</packaging>
+
+  <name>OCES3 Certificate Parser</name>
+  <description>
+    Standalone library for parsing Danish OCES3 X.509 certificates in SOAP/mTLS
+    e-government integrations. Extracts RFC2253 DN fields and exposes identity
+    context via a Spring-injectable component.
+  </description>
+
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spring-framework.version>6.2.5</spring-framework.version>
+  </properties>
+
+  <dependencies>
+    <!-- Spring Beans for @Component and @Value injection -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>${spring-framework.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>${spring-framework.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <source>21</source>
+          <target>21</target>
+          <encoding>UTF-8</encoding>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

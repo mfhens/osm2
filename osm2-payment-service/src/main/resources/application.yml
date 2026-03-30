@@ -65,3 +65,9 @@ osm2:
     database: ${IMMUDB_DATABASE:defaultdb}
     username: ${IMMUDB_USER:immudb}
     password: ${IMMUDB_PASSWORD:immudb}
+
+# OCES3 certificate parser — configures which DN field identifies the creditor system.
+# For NemKonto and fordringssystem: the system identifier is typically in CN.
+# Override with 'O' or a custom OID label if your OCES3 certificate encodes it differently.
+oces3:
+  dn-field: ${OCES3_DN_FIELD:CN}

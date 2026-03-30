@@ -14,6 +14,8 @@
     <description>One Stop Moms 2 — Danish VAT One Stop Shop system (parent POM)</description>
 
     <modules>
+        <module>oces3-certificate-parser</module>
+        <module>keycloak-oauth2-starter</module>
         <module>skat-design-system</module>
         <module>osm2-common</module>
         <module>osm2-scheme-service</module>
@@ -55,6 +57,12 @@
         <!-- Audit / immutability -->
         <immudb.version>0.9.7</immudb.version>
         <bookkeeping.version>4.3.0</bookkeeping.version>
+
+        <!-- OCES3 Certificate Parser — mTLS identity for SOAP e-government integrations -->
+        <oces3-certificate-parser.version>1.0</oces3-certificate-parser.version>
+
+        <!-- Keycloak OAuth2 resource server starter -->
+        <keycloak-oauth2-starter.version>1.0</keycloak-oauth2-starter.version>
 
         <!-- SKAT Design System WebJar -->
         <skat-design-system.version>1.0.0</skat-design-system.version>
@@ -142,6 +150,16 @@
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>okhttp</artifactId>
                 <version>${okhttp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dk.ufst</groupId>
+                <artifactId>oces3-certificate-parser</artifactId>
+                <version>${oces3-certificate-parser.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dk.ufst</groupId>
+                <artifactId>keycloak-oauth2-starter</artifactId>
+                <version>${keycloak-oauth2-starter.version}</version>
             </dependency>
             <dependency>
                 <groupId>dk.ufst.opendebt</groupId>

@@ -1,0 +1,19 @@
+# Demo profile — portals have no database, but demo mode relaxes CSRF for local testing
+# and switches the OIDC provider to the local Keycloak with demo users.
+spring:
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/osm2
+        registration:
+          keycloak:
+            client-id: osm2-authority-portal
+            client-secret: demo-secret-authority
+            scope: openid,profile,email
+
+logging:
+  level:
+    dk.osm2: DEBUG
+    org.springframework.security: DEBUG
