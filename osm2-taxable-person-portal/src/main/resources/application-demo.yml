@@ -2,6 +2,7 @@
 # and switches the OIDC provider to the local Keycloak with demo users.
 spring:
   security:
+    enabled: false
     oauth2:
       client:
         provider:

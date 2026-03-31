@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="da">
+<head>
+    <title>Trin 1 — Ordningsvurdering</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="skat-page-header">
+        <h1 class="skat-heading skat-heading--h1">Registrering for OSS-moms</h1>
+        <p class="skat-lead">Trin 1 af 3 — Fastlæg hvilken OSS-ordning der gælder for din virksomhed.</p>
+    </div>
+
+    <!-- Step indicator -->
+    <ol class="skat-timeline" aria-label="Registreringstrin">
+        <li class="skat-timeline__step skat-timeline__step--active" aria-current="step">Ordningsvurdering</li>
+        <li class="skat-timeline__step">Registreringsoplysninger</li>
+        <li class="skat-timeline__step">Gennemse og indsend</li>
+    </ol>
+
+    <!-- Ineligible / not-eligible result banner -->
+    <div th:if="${classificationResult != null and !classificationResult.eligible()}"
+         class="skat-alert skat-alert--warning" role="alert">
+        <span class="dap-ikon dap-ikon--advarsel" aria-hidden="true"></span>
+        <div>
+            <strong>Din virksomhed er ikke berettiget til en OSS-ordning.</strong>
+            <p th:text="${classificationResult.message()}">Årsag ikke tilgængelig.</p>
+            <p>Status: <code th:text="${classificationResult.status()}"></code></p>
+        </div>
+    </div>
+
+    <form th:action="@{/register/step1}" th:object="${step1Form}" method="post"
+          novalidate class="skat-form">
+
+        <!-- Supply type -->
+        <div class="skat-form__group">
+            <label for="supplyType" class="skat-label skat-label--required">Leveringstype</label>
+            <select id="supplyType" th:field="*{supplyType}" class="skat-select" required>
+                <option value="SERVICES">Tjenesteydelser (ikke-EU / EU)</option>
+                <option value="DISTANCE_SALES_INTRA_EU">EU-fjernsalg af varer</option>
+                <option value="IMPORT_GOODS">Import af varer (IOSS)</option>
+            </select>
+        </div>
+
+        <!-- Home country -->
+        <div class="skat-form__group">
+            <label for="homeCountry" class="skat-label skat-label--required">Etableringsland (ISO alpha-2)</label>
+            <input id="homeCountry" type="text" th:field="*{homeCountry}"
+                   class="skat-input" placeholder="f.eks. DK" maxlength="2" required />
+        </div>
+
+        <!-- Consumer country -->
+        <div class="skat-form__group">
+            <label for="consumerCountry" class="skat-label skat-label--required">Forbrugsland (ISO alpha-2)</label>
+            <input id="consumerCountry" type="text" th:field="*{consumerCountry}"
+                   class="skat-input" placeholder="f.eks. DE" maxlength="2" required />
+        </div>
+
+        <!-- Identification member state -->
+        <div class="skat-form__group">
+            <label for="identificationMemberState" class="skat-label">Identifikationsmedlemsstat (valgfri)</label>
+            <input id="identificationMemberState" type="text" th:field="*{identificationMemberState}"
+                   class="skat-input" placeholder="f.eks. DK" maxlength="2" />
+        </div>
+
+        <!-- Goods value (Import) -->
+        <div class="skat-form__group">
+            <label for="goodsValue" class="skat-label">Forsendelsesværdi i EUR (IOSS)</label>
+            <input id="goodsValue" type="number" step="0.01" th:field="*{goodsValue}"
+                   class="skat-input" placeholder="f.eks. 130.00" />
+        </div>
+
+        <!-- Checkboxes -->
+        <div class="skat-form__group skat-form__group--checkbox">
+            <label class="skat-checkbox">
+                <input type="checkbox" th:field="*{establishedInEu}" />
+                <span>Virksomheden har hjemsted for sin økonomiske aktivitet i EU</span>
+            </label>
+        </div>
+
+        <div class="skat-form__group skat-form__group--checkbox">
+            <label class="skat-checkbox">
+                <input type="checkbox" th:field="*{enrolledInOtherScheme}" />
+                <span>Virksomheden er allerede tilmeldt en anden OSS-ordning</span>
+            </label>
+        </div>
+
+        <div class="skat-form__actions">
+            <button type="submit" class="skat-button skat-button--primary">
+                Næste: Registreringsoplysninger
+                <span class="dap-ikon dap-ikon--pil-hoejre" aria-hidden="true"></span>
+            </button>
+        </div>
+    </form>
+
+</div>
+</body>
+</html>

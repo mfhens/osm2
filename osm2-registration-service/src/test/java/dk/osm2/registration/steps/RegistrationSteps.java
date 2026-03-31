@@ -160,6 +160,7 @@ public class RegistrationSteps {
     // ── Transitional context ─────────────────────────────────────────────────
     private LocalDate preJulyRegistrationDate;
     private LocalDate systemCurrentDate;
+    private LocalDate evaluationDate;
 
     // ── Supply / re-registration context ─────────────────────────────────────
     private LocalDate supplyDate;
@@ -239,6 +240,7 @@ public class RegistrationSteps {
 
         preJulyRegistrationDate    = null;
         systemCurrentDate          = null;
+        evaluationDate             = null;
 
         supplyDate                 = null;
         supplyCountry              = null;
@@ -1501,7 +1503,7 @@ public class RegistrationSteps {
     @When("Skatteforvaltningen records the exclusion decision")
     public void skatteforvaltningenRecordsExclusionDecision() {
         // COMPILE-TIME FAILURE: ExclusionRequest record does not exist yet
-        ExclusionRequest request = new ExclusionRequest(exclusionCriterion, exclusionDecisionDate.plusMonths(1).withDayOfMonth(1));
+        ExclusionRequest request = new ExclusionRequest(exclusionCriterion, exclusionDecisionDate.plusMonths(1).withDayOfMonth(1), exclusionDecisionDate);
         postAction(currentRegistrationId, "exclude", request);
         fetchRegistration(currentRegistrationId);
     }
@@ -1523,7 +1525,7 @@ public class RegistrationSteps {
 
     @When("the forced exclusion decision for {string} is recorded")
     public void forcedExclusionDecisionRecorded(String criterion) {
-        ExclusionRequest request = new ExclusionRequest(criterion, exclusionDecisionDate.plusMonths(1).withDayOfMonth(1));
+        ExclusionRequest request = new ExclusionRequest(criterion, exclusionDecisionDate.plusMonths(1).withDayOfMonth(1), exclusionDecisionDate);
         postAction(currentRegistrationId, "exclude", request);
         fetchRegistration(currentRegistrationId);
     }
@@ -1554,7 +1556,7 @@ public class RegistrationSteps {
     @Given("a taxable person is excluded for criterion {string} effective {localdate}")
     public void taxablePersonExcludedForCriterionEffective(String criterion, LocalDate effectiveDate) {
         createActiveRegistration("EU");
-        ExclusionRequest request = new ExclusionRequest(criterion, effectiveDate);
+        ExclusionRequest request = new ExclusionRequest(criterion, effectiveDate, null);
         postAction(currentRegistrationId, "exclude", request);
     }
 
@@ -1585,7 +1587,7 @@ public class RegistrationSteps {
 
     @When("Skatteforvaltningen records forced exclusion due to the establishment change")
     public void recordsForcedExclusionDueToEstablishmentChange() {
-        ExclusionRequest request = new ExclusionRequest("CONDITIONS_NOT_MET", establishmentChangeDate);
+        ExclusionRequest request = new ExclusionRequest("CONDITIONS_NOT_MET", establishmentChangeDate, null);
         postAction(currentRegistrationId, "exclude", request);
         fetchRegistration(currentRegistrationId);
     }
@@ -1627,7 +1629,7 @@ public class RegistrationSteps {
     @Given("a taxable person has been excluded from the EU scheme effective {localdate}")
     public void taxablePersonExcludedEffective(LocalDate effectiveDate) {
         createActiveRegistration("EU");
-        ExclusionRequest request = new ExclusionRequest("CESSATION_NOTIFICATION", effectiveDate);
+        ExclusionRequest request = new ExclusionRequest("CESSATION_NOTIFICATION", effectiveDate, null);
         postAction(currentRegistrationId, "exclude", request);
     }
 

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="da">
+
+<head>
+    <title>Sagsbehandlingskø</title>
+</head>
+
+<body>
+<main layout:fragment="content">
+
+    <div class="skat-page-header">
+        <h1 class="skat-heading-1">Sagsbehandlingskø</h1>
+        <p class="skat-body">Afventende registreringer der mangler momsnummer-tildeling (SLA: 8 kalenderdage)</p>
+    </div>
+
+    <!-- Flash message -->
+    <div th:if="${flashMessage}"
+         th:classappend="${flashType == 'success'} ? 'skat-alert--success' : 'skat-alert--warning'"
+         class="skat-alert"
+         role="alert">
+        <span class="skat-alert__message" th:text="${flashMessage}">Besked</span>
+    </div>
+
+    <!-- Registration queue table -->
+    <section class="skat-section">
+        <div th:if="${#lists.isEmpty(registrations)}" class="skat-empty-state">
+            <p>Ingen afventende registreringer — køen er tom.</p>
+        </div>
+
+        <table th:unless="${#lists.isEmpty(registrations)}"
+               class="skat-table skat-table--full-width"
+               aria-label="Afventende registreringer">
+            <caption class="skat-sr-only">Liste over registreringer der afventer momsnummer-tildeling</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Virksomhed</th>
+                    <th scope="col">Ordning</th>
+                    <th scope="col">Hjemland</th>
+                    <th scope="col">Indsendt</th>
+                    <th scope="col">Ikrafttrædelsesdato</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"><span class="skat-sr-only">Handlinger</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="reg : ${registrations}">
+                    <td th:text="${reg.registrantName}">Virksomhedsnavn</td>
+                    <td>
+                        <span class="skat-badge skat-badge--scheme"
+                              th:text="${reg.schemeType}">NON_EU</span>
+                    </td>
+                    <td th:text="${reg.schemeType}">DK</td>
+                    <td th:text="${#temporals.format(reg.effectiveDate, 'dd-MM-yyyy')}">01-01-2024</td>
+                    <td>
+                        <span th:text="${#temporals.format(reg.effectiveDate, 'dd-MM-yyyy')}">01-04-2024</span>
+                    </td>
+                    <td>
+                        <span class="skat-badge skat-badge--status skat-badge--pending"
+                              th:text="${reg.status}">PENDING_VAT_NUMBER</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/review/{id}(id=${reg.registrationId})}"
+                           class="skat-link skat-link--action"
+                           th:aria-label="|Gennemgå registrering for ${reg.registrantName}|">
+                            Gennemgå
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="da">
+<head>
+    <title>Registrering modtaget</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="skat-page-header skat-page-header--success">
+        <span class="dap-ikon dap-ikon--check-cirkel skat-success-icon" aria-hidden="true"></span>
+        <h1 class="skat-heading skat-heading--h1">Registrering modtaget</h1>
+        <p class="skat-lead">Din ansøgning om registrering for OSS-moms er blevet modtaget og behandles nu.</p>
+    </div>
+
+    <div class="skat-review-card">
+        <h2 class="skat-heading skat-heading--h2">Kvittering</h2>
+        <dl class="skat-definition-list">
+            <dt>Registrerings-ID</dt>
+            <dd>
+                <code th:text="${registrationId}">—</code>
+            </dd>
+
+            <dt>Status</dt>
+            <dd>
+                <span th:switch="${status}"
+                      class="skat-badge">
+                    <span th:case="'PENDING'" class="skat-badge--warning" th:text="#{status.PENDING}">Afventer</span>
+                    <span th:case="'ACTIVE'" class="skat-badge--success" th:text="#{status.ACTIVE}">Aktiv</span>
+                    <span th:case="'REJECTED'" class="skat-badge--error" th:text="#{status.REJECTED}">Afvist</span>
+                    <span th:case="*" th:text="${status}">Ukendt</span>
+                </span>
+            </dd>
+
+            <dt th:if="${effectiveDate}">Ikrafttrædelsesdato</dt>
+            <dd th:if="${effectiveDate}" th:text="${effectiveDate}">—</dd>
+
+            <dt th:if="${vatNumber}">Tildelt momsnummer</dt>
+            <dd th:if="${vatNumber}"><strong th:text="${vatNumber}">—</strong></dd>
+
+            <dt th:if="${scheme}">Ordning</dt>
+            <dd th:if="${scheme}" th:switch="${scheme}">
+                <span th:case="'NON_EU'">Ikke-EU-ordningen (ML § 66a)</span>
+                <span th:case="'EU'">EU-ordningen (ML § 66d)</span>
+                <span th:case="'IMPORT'">Importordningen (ML § 66m)</span>
+                <span th:case="*" th:text="${scheme}">—</span>
+            </dd>
+
+            <dt th:if="${legalBasis}">Retsgrundlag</dt>
+            <dd th:if="${legalBasis}" th:text="${legalBasis}">—</dd>
+        </dl>
+    </div>
+
+    <div class="skat-infobox">
+        <span class="dap-ikon dap-ikon--information" aria-hidden="true"></span>
+        <p>Du vil modtage en bekræftelse via e-mail, når din registrering er godkendt.
+           Du kan følge status på din oversigt.</p>
+    </div>
+
+    <div class="skat-form__actions">
+        <a th:href="@{/dashboard}" class="skat-button skat-button--primary">
+            <span class="dap-ikon dap-ikon--hjem" aria-hidden="true"></span>
+            Gå til oversigt
+        </a>
+        <a th:href="@{/register/step1}" class="skat-button skat-button--secondary">
+            Registrér endnu en virksomhed
+        </a>
+    </div>
+
+</div>
+</body>
+</html>

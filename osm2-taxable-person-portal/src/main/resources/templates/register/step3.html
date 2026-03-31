@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="da">
+<head>
+    <title>Trin 3 — Gennemse og indsend</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="skat-page-header">
+        <h1 class="skat-heading skat-heading--h1">Registrering for OSS-moms</h1>
+        <p class="skat-lead">Trin 3 af 3 — Gennemse dine oplysninger inden indsendelse.</p>
+    </div>
+
+    <!-- Step indicator -->
+    <ol class="skat-timeline" aria-label="Registreringstrin">
+        <li class="skat-timeline__step skat-timeline__step--completed">Ordningsvurdering</li>
+        <li class="skat-timeline__step skat-timeline__step--completed">Registreringsoplysninger</li>
+        <li class="skat-timeline__step skat-timeline__step--active" aria-current="step">Gennemse og indsend</li>
+    </ol>
+
+    <div class="skat-review-card">
+        <h2 class="skat-heading skat-heading--h2">Valgt OSS-ordning</h2>
+        <dl class="skat-definition-list">
+            <dt>Ordning</dt>
+            <dd th:switch="${session.classifiedScheme}">
+                <span th:case="'NON_EU'">Ikke-EU-ordningen (ML § 66a / MSD art. 358a)</span>
+                <span th:case="'EU'">EU-ordningen (ML § 66d / MSD art. 369a)</span>
+                <span th:case="'IMPORT'">Importordningen (ML § 66m / MSD art. 369l)</span>
+                <span th:case="*" th:text="${session.classifiedScheme}">Ukendt</span>
+            </dd>
+        </dl>
+    </div>
+
+    <div class="skat-review-card">
+        <h2 class="skat-heading skat-heading--h2">Virksomhedsoplysninger</h2>
+        <dl class="skat-definition-list">
+            <dt>Virksomhedsnavn</dt>
+            <dd th:text="${session.registrantName}">—</dd>
+
+            <dt>Etableringsland</dt>
+            <dd th:text="${session.homeCountry}">—</dd>
+
+            <dt>Skattenummer (hjemland)</dt>
+            <dd th:text="${session.homeCountryTaxNumber}">—</dd>
+
+            <dt>Postadresse</dt>
+            <dd th:text="${session.postalAddress}">—</dd>
+
+            <dt>E-mailadresse</dt>
+            <dd th:text="${session.email}">—</dd>
+
+            <dt>Telefonnummer</dt>
+            <dd th:text="${session.phoneNumber}">—</dd>
+
+            <dt>Bankoplysninger</dt>
+            <dd th:text="${session.bankDetails}">—</dd>
+
+            <dt>Identifikationsmedlemsstat</dt>
+            <dd th:text="${session.identificationMemberState}">—</dd>
+
+            <dt>Dato for første levering</dt>
+            <dd th:text="${session.firstDeliveryDate}">—</dd>
+        </dl>
+    </div>
+
+    <div class="skat-infobox skat-infobox--legal">
+        <span class="dap-ikon dap-ikon--paragraf" aria-hidden="true"></span>
+        <p>
+            Ved at indsende bekræfter du, at oplysningerne er korrekte og fuldstændige.
+            Registreringen er juridisk bindende i henhold til momslovens §§ 66–66u.
+        </p>
+    </div>
+
+    <form th:action="@{/register/step3}" method="post" class="skat-form">
+        <div class="skat-form__actions">
+            <a th:href="@{/register/step2}" class="skat-button skat-button--secondary">
+                <span class="dap-ikon dap-ikon--pil-venstre" aria-hidden="true"></span>
+                Ret oplysninger
+            </a>
+            <button type="submit" class="skat-button skat-button--primary skat-button--cta">
+                <span class="dap-ikon dap-ikon--check" aria-hidden="true"></span>
+                Indsend registrering
+            </button>
+        </div>
+    </form>
+
+</div>
+</body>
+</html>

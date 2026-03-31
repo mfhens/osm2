@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="da">
+<head>
+    <title>Fejl</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="skat-page-header skat-page-header--error">
+        <span class="dap-ikon dap-ikon--fejl-cirkel skat-error-icon" aria-hidden="true"></span>
+        <h1 class="skat-heading skat-heading--h1">
+            <span th:text="${statusCode}">Fejl</span>
+            —
+            <span th:text="${statusText}">Der opstod en fejl</span>
+        </h1>
+    </div>
+
+    <div class="skat-alert skat-alert--error" role="alert">
+        <p th:text="${message}">En uventet fejl opstod. Kontakt support, hvis problemet vedvarer.</p>
+    </div>
+
+    <details th:if="${detail}" class="skat-details">
+        <summary>Teknisk information</summary>
+        <pre class="skat-code-block" th:text="${detail}"></pre>
+    </details>
+
+    <div class="skat-form__actions" style="margin-top:2rem">
+        <a th:href="@{/dashboard}" class="skat-button skat-button--primary">
+            <span class="dap-ikon dap-ikon--hjem" aria-hidden="true"></span>
+            Tilbage til oversigt
+        </a>
+    </div>
+
+</div>
+</body>
+</html>

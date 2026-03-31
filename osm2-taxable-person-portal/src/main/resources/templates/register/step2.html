@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="da">
+<head>
+    <title>Trin 2 — Registreringsoplysninger</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="skat-page-header">
+        <h1 class="skat-heading skat-heading--h1">Registrering for OSS-moms</h1>
+        <p class="skat-lead">Trin 2 af 3 — Udfyld virksomhedens registreringsoplysninger.</p>
+    </div>
+
+    <!-- Step indicator -->
+    <ol class="skat-timeline" aria-label="Registreringstrin">
+        <li class="skat-timeline__step skat-timeline__step--completed">Ordningsvurdering</li>
+        <li class="skat-timeline__step skat-timeline__step--active" aria-current="step">Registreringsoplysninger</li>
+        <li class="skat-timeline__step">Gennemse og indsend</li>
+    </ol>
+
+    <!-- Scheme badge -->
+    <div class="skat-infobox" th:if="${classifiedScheme}">
+        <span class="dap-ikon dap-ikon--information" aria-hidden="true"></span>
+        Valgt ordning:
+        <strong th:switch="${classifiedScheme}">
+            <span th:case="'NON_EU'">Ikke-EU-ordningen (ML § 66a)</span>
+            <span th:case="'EU'">EU-ordningen (ML § 66d)</span>
+            <span th:case="'IMPORT'">Importordningen (ML § 66m)</span>
+            <span th:case="*" th:text="${classifiedScheme}">Ukendt ordning</span>
+        </strong>
+    </div>
+
+    <form th:action="@{/register/step2}" th:object="${step2Form}" method="post"
+          novalidate class="skat-form">
+
+        <!-- Registrant name -->
+        <div class="skat-form__group">
+            <label for="registrantName" class="skat-label skat-label--required">Virksomhedsnavn</label>
+            <div th:if="${#fields.hasErrors('registrantName')}" class="skat-error-message"
+                 th:errors="*{registrantName}"></div>
+            <input id="registrantName" type="text" th:field="*{registrantName}"
+                   th:classappend="${#fields.hasErrors('registrantName')} ? 'skat-input--error'"
+                   class="skat-input" required />
+        </div>
+
+        <!-- Home country -->
+        <div class="skat-form__group">
+            <label for="homeCountry" class="skat-label skat-label--required">Etableringsland (ISO alpha-2)</label>
+            <input id="homeCountry" type="text" th:field="*{homeCountry}"
+                   class="skat-input" placeholder="DK" maxlength="2" required />
+        </div>
+
+        <!-- Tax number -->
+        <div class="skat-form__group">
+            <label for="homeCountryTaxNumber" class="skat-label skat-label--required">Skattenummer (hjemland)</label>
+            <input id="homeCountryTaxNumber" type="text" th:field="*{homeCountryTaxNumber}"
+                   class="skat-input" required />
+        </div>
+
+        <!-- Postal address -->
+        <div class="skat-form__group">
+            <label for="postalAddress" class="skat-label skat-label--required">Postadresse</label>
+            <textarea id="postalAddress" th:field="*{postalAddress}"
+                      class="skat-textarea" rows="3" required></textarea>
+        </div>
+
+        <!-- Email -->
+        <div class="skat-form__group">
+            <label for="email" class="skat-label skat-label--required">E-mailadresse</label>
+            <input id="email" type="email" th:field="*{email}" class="skat-input" required />
+        </div>
+
+        <!-- Phone -->
+        <div class="skat-form__group">
+            <label for="phoneNumber" class="skat-label">Telefonnummer</label>
+            <input id="phoneNumber" type="tel" th:field="*{phoneNumber}" class="skat-input" />
+        </div>
+
+        <!-- Bank details -->
+        <div class="skat-form__group">
+            <label for="bankDetails" class="skat-label">Bankoplysninger (IBAN)</label>
+            <input id="bankDetails" type="text" th:field="*{bankDetails}" class="skat-input" />
+        </div>
+
+        <!-- Identification member state -->
+        <div class="skat-form__group">
+            <label for="identificationMemberState" class="skat-label">Identifikationsmedlemsstat</label>
+            <input id="identificationMemberState" type="text" th:field="*{identificationMemberState}"
+                   class="skat-input" maxlength="2" />
+        </div>
+
+        <!-- First delivery date -->
+        <div class="skat-form__group">
+            <label for="firstDeliveryDate" class="skat-label">Dato for første levering</label>
+            <input id="firstDeliveryDate" type="date" th:field="*{firstDeliveryDate}"
+                   class="skat-input" />
+        </div>
+
+        <div class="skat-form__actions">
+            <a th:href="@{/register/step1}" class="skat-button skat-button--secondary">
+                <span class="dap-ikon dap-ikon--pil-venstre" aria-hidden="true"></span>
+                Tilbage
+            </a>
+            <button type="submit" class="skat-button skat-button--primary">
+                Næste: Gennemse
+                <span class="dap-ikon dap-ikon--pil-hoejre" aria-hidden="true"></span>
+            </button>
+        </div>
+    </form>
+
+</div>
+</body>
+</html>

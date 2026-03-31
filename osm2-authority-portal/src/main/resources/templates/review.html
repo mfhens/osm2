@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="da">
+
+<head>
+    <title>Gennemgå registrering</title>
+</head>
+
+<body>
+<main layout:fragment="content">
+
+    <div class="skat-page-header">
+        <a th:href="@{/queue}" class="skat-link skat-link--back">← Tilbage til køen</a>
+        <h1 class="skat-heading-1">Gennemgå registrering</h1>
+    </div>
+
+    <!-- Registration detail panel -->
+    <section class="skat-section" aria-labelledby="detail-heading">
+        <h2 id="detail-heading" class="skat-heading-2">Registreringsoplysninger</h2>
+
+        <dl class="skat-description-list skat-description-list--two-column">
+            <dt>Registrerings-ID</dt>
+            <dd th:text="${registration.registrationId}">uuid</dd>
+
+            <dt>Virksomhed</dt>
+            <dd th:text="${registration.registrantName}">Virksomhedsnavn</dd>
+
+            <dt>Hjemland</dt>
+            <dd th:text="${registration.homeCountry}">DK</dd>
+
+            <dt>E-mail</dt>
+            <dd>
+                <a th:href="|mailto:${registration.email}|"
+                   th:text="${registration.email}"
+                   class="skat-link">email@example.com</a>
+            </dd>
+
+            <dt>Postadresse</dt>
+            <dd th:text="${registration.postalAddress}">Adresse</dd>
+
+            <dt>Bankoplysninger</dt>
+            <dd th:text="${registration.bankDetails}">—</dd>
+
+            <dt>Ordning</dt>
+            <dd>
+                <span class="skat-badge skat-badge--scheme"
+                      th:text="${registration.schemeType}">NON_EU</span>
+            </dd>
+
+            <dt>Status</dt>
+            <dd>
+                <span class="skat-badge skat-badge--status skat-badge--pending"
+                      th:text="${registration.status}">PENDING_VAT_NUMBER</span>
+            </dd>
+
+            <dt>Ikrafttrædelsesdato</dt>
+            <dd th:text="${registration.effectiveDate != null ? #temporals.format(registration.effectiveDate, 'dd-MM-yyyy') : '—'}">01-04-2024</dd>
+
+            <dt>Retsgrundlag</dt>
+            <dd th:text="${registration.legalBasis}">ML § 66b stk. 2</dd>
+
+            <dt>Momsnummer</dt>
+            <dd th:text="${registration.vatNumber != null ? registration.vatNumber : 'Ikke tildelt endnu'}">—</dd>
+        </dl>
+    </section>
+
+    <!-- Approve / Reject forms -->
+    <section class="skat-section skat-section--actions" aria-labelledby="actions-heading">
+        <h2 id="actions-heading" class="skat-heading-2">Sagsbehandling</h2>
+
+        <div class="skat-action-panel">
+
+            <!-- Approve form -->
+            <div class="skat-action-card skat-action-card--approve">
+                <h3 class="skat-heading-3">Godkend registrering</h3>
+                <p class="skat-body skat-body--muted">
+                    Angiv momsnummer, eller lad feltet stå tomt for automatisk tildeling.
+                </p>
+
+                <form th:action="@{/review/{id}/approve(id=${registration.registrationId})}"
+                      th:object="${approveForm}"
+                      method="post"
+                      novalidate>
+
+                    <div class="skat-form-group">
+                        <label for="vatNumber" class="skat-label">
+                            Momsnummer <span class="skat-label__optional">(valgfri)</span>
+                        </label>
+                        <input type="text"
+                               id="vatNumber"
+                               th:field="*{vatNumber}"
+                               class="skat-input"
+                               placeholder="f.eks. EU123456789"
+                               aria-describedby="vatNumber-hint"/>
+                        <span id="vatNumber-hint" class="skat-hint">
+                            Lad feltet stå tomt, og systemet genererer et nummer.
+                        </span>
+                    </div>
+
+                    <button type="submit" class="skat-button skat-button--primary">
+                        <span class="dap-ikon dap-ikon--check" aria-hidden="true"></span>
+                        Godkend
+                    </button>
+                </form>
+            </div>
+
+            <!-- Reject form -->
+            <div class="skat-action-card skat-action-card--reject">
+                <h3 class="skat-heading-3">Afvis registrering</h3>
+                <p class="skat-body skat-body--muted">
+                    Angiv begrundelse for afvisning. Begrundelsen kommunikeres til virksomheden.
+                </p>
+
+                <form th:action="@{/review/{id}/reject(id=${registration.registrationId})}"
+                      th:object="${rejectForm}"
+                      method="post"
+                      novalidate>
+
+                    <div class="skat-form-group" th:classappend="${rejectError != null} ? 'skat-form-group--error' : ''">
+                        <label for="reason" class="skat-label">
+                            Afvisningsgrund <span class="skat-label__required" aria-hidden="true">*</span>
+                        </label>
+                        <span class="skat-error-message"
+                              th:if="${rejectError}"
+                              th:text="${rejectError}"
+                              role="alert">Fejl</span>
+                        <textarea id="reason"
+                                  th:field="*{reason}"
+                                  class="skat-textarea"
+                                  rows="4"
+                                  required
+                                  aria-required="true"
+                                  placeholder="Begrund afvisningen..."></textarea>
+                    </div>
+
+                    <button type="submit" class="skat-button skat-button--destructive">
+                        <span class="dap-ikon dap-ikon--close" aria-hidden="true"></span>
+                        Afvis
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </section>
+
+</main>
+</body>
+</html>

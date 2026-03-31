@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="da">
+<head>
+    <title>Oversigt — Mine registreringer</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="skat-page-header">
+        <h1 class="skat-heading skat-heading--h1">Mine OSS-registreringer</h1>
+        <p class="skat-lead">Oversigt over dine aktive og afventende registreringer for One Stop Moms.</p>
+    </div>
+
+    <!-- Load error -->
+    <div th:if="${loadError}" class="skat-alert skat-alert--warning" role="alert">
+        <span class="dap-ikon dap-ikon--advarsel" aria-hidden="true"></span>
+        <div>
+            <strong>Kunne ikke indlæse registreringer.</strong>
+            <p>Registreringstjenesten er midlertidigt utilgængelig. Prøv igen om lidt.</p>
+        </div>
+    </div>
+
+    <!-- Empty state -->
+    <div th:if="${registrations != null and registrations.isEmpty() and !loadError}"
+         class="skat-empty-state">
+        <span class="dap-ikon dap-ikon--mappe-tom skat-empty-state__icon" aria-hidden="true"></span>
+        <h2 class="skat-heading skat-heading--h3">Ingen registreringer endnu</h2>
+        <p>Du har ikke registreret en virksomhed for OSS-moms endnu.</p>
+        <a th:href="@{/register/step1}" class="skat-button skat-button--primary">
+            <span class="dap-ikon dap-ikon--plus" aria-hidden="true"></span>
+            Start registrering
+        </a>
+    </div>
+
+    <!-- Registrations table -->
+    <div th:if="${registrations != null and !registrations.isEmpty()}">
+        <div class="skat-toolbar">
+            <a th:href="@{/register/step1}" class="skat-button skat-button--primary">
+                <span class="dap-ikon dap-ikon--plus" aria-hidden="true"></span>
+                Ny registrering
+            </a>
+        </div>
+
+        <table class="skat-table" aria-label="Mine OSS-registreringer">
+            <caption class="sr-only">Liste over dine OSS-momsregistreringer</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Registrerings-ID</th>
+                    <th scope="col">Ordning</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Ikrafttrædelsesdato</th>
+                    <th scope="col">Momsnummer</th>
+                    <th scope="col">Retsgrundlag</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="reg : ${registrations}">
+                    <td>
+                        <code class="skat-code"
+                              th:text="${reg.registrationId}">—</code>
+                    </td>
+                    <td th:switch="${reg.schemeType}">
+                        <span th:case="'NON_EU'">Ikke-EU-ordningen</span>
+                        <span th:case="'EU'">EU-ordningen</span>
+                        <span th:case="'IMPORT'">Importordningen</span>
+                        <span th:case="*" th:text="${reg.schemeType}">—</span>
+                    </td>
+                    <td>
+                        <span th:switch="${reg.status}" class="skat-badge">
+                            <span th:case="'PENDING'" class="skat-badge--warning">Afventer</span>
+                            <span th:case="'ACTIVE'" class="skat-badge--success">Aktiv</span>
+                            <span th:case="'REJECTED'" class="skat-badge--error">Afvist</span>
+                            <span th:case="'WITHDRAWN'" class="skat-badge--neutral">Trukket tilbage</span>
+                            <span th:case="*" th:text="${reg.status}">—</span>
+                        </span>
+                    </td>
+                    <td th:text="${reg.effectiveDate}">—</td>
+                    <td th:text="${reg.vatNumber}">—</td>
+                    <td th:text="${reg.legalBasis}">—</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</body>
+</html>
