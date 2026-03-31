@@ -4,9 +4,7 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.security.auth.x500.X500Principal;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,8 +22,8 @@ import org.springframework.stereotype.Component;
  *   dn-field: CN   # Default. Use 'O' or a custom OID label for the creditor identifier.
  * </pre>
  *
- * <p>The property {@code oces3.dn-field} controls which DN attribute is extracted as the
- * {@code fordringshaverId} in the returned {@link Oces3AuthContext}.
+ * <p>The property {@code oces3.dn-field} controls which DN attribute is extracted as the {@code
+ * fordringshaverId} in the returned {@link Oces3AuthContext}.
  */
 @Component
 public class Oces3CertificateParser {

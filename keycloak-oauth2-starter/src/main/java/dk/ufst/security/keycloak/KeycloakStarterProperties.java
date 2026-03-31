@@ -6,8 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * Configuration properties for the Keycloak OAuth2 resource server starter.
  *
- * <p>Bind via {@code keycloak.starter.*} in {@code application.properties} /
- * {@code application.yml}.
+ * <p>Bind via {@code keycloak.starter.*} in {@code application.properties} / {@code
+ * application.yml}.
  */
 @ConfigurationProperties(prefix = "keycloak.starter")
 public class KeycloakStarterProperties {

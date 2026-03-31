@@ -16,8 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
  * <p>Provides two profile-gated {@link SecurityFilterChain} beans:
  *
  * <ul>
- *   <li><b>keycloakSecuredFilterChain</b> — active for {@code !local & !dev & !demo}: stateless
- *       JWT resource server, CSRF disabled, actuator + Swagger UI permitted.
+ *   <li><b>keycloakSecuredFilterChain</b> — active for {@code !local & !dev & !demo}: stateless JWT
+ *       resource server, CSRF disabled, actuator + Swagger UI permitted.
  *   <li><b>keycloakPermissiveFilterChain</b> — active for {@code local | dev | demo}: permits all
  *       requests without authentication for local development.
  * </ul>

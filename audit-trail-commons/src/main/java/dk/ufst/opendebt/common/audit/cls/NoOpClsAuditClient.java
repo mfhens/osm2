@@ -1,11 +1,9 @@
 package dk.ufst.opendebt.common.audit.cls;
 
 import java.util.List;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * No-op implementation of CLS audit client for development/testing.
