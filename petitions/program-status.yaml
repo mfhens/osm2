@@ -6,17 +6,25 @@
 #   technical_backlog: list of TB-* technical backlog items (populated by tech-debt-executor)
 
 program: osm2
-last_updated: "2026-03-30"
+last_updated: "2026-05-21"
 
 petitions:
   - id: OSS-01
     title: "Juridisk grundlag, skemavurdering og definitioner"
-    status: draft
+    status: implemented
     created: "2026-03-30"
+    implemented: "2026-05-21"
+    commit: "23e651b"
     artifacts:
       petition: petitions/OSS-01/OSS-01.md
       outcome_contract: petitions/OSS-01/OSS-01-outcome-contract.md
       feature_file: petitions/OSS-01/OSS-01.feature
+      test_features:
+        - osm2-scheme-service/src/test/resources/features/OSS-01-01-ikke-eu-ordningen.feature
+        - osm2-scheme-service/src/test/resources/features/OSS-01-02-eu-ordningen.feature
+        - osm2-scheme-service/src/test/resources/features/OSS-01-03-importordningen.feature
+        - osm2-scheme-service/src/test/resources/features/OSS-01-04-regelhierarki.feature
+        - osm2-scheme-service/src/test/resources/features/OSS-01-05-utilstraekkelige-oplysninger.feature
     gherkin_scenarios: 27
     functional_requirements: 8
     legal_basis:
@@ -36,8 +44,10 @@ petitions:
 
   - id: OSS-02
     title: "Registrering og afmeldelse — Ikke-EU-ordning og EU-ordning"
-    status: draft
+    status: implemented
     created: "2026-03-30"
+    implemented: "2026-05-21"
+    commit: "0fa0946"
     artifacts:
       petition: petitions/OSS-02/OSS-02.md
       outcome_contract: petitions/OSS-02/OSS-02-outcome-contract.md
