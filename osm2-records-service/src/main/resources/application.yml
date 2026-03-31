@@ -57,3 +57,8 @@ otel:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
   service:
     name: ${spring.application.name}
+
+opendebt:
+  audit:
+    cls:
+      enabled: false   # Set to true and configure endpoint in production via env/configmap

@@ -17,6 +17,12 @@
     <description>Shared DTOs, base entities, AuditableEntity, and test fixtures</description>
 
     <dependencies>
+        <!-- Reusable audit infrastructure: AuditableEntity, AuditContextFilter, CLS shipping -->
+        <dependency>
+            <groupId>dk.ufst</groupId>
+            <artifactId>audit-trail-commons</artifactId>
+        </dependency>
+
         <!-- Spring Boot (compile — provides shared annotations and auto-config hooks) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

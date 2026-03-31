@@ -14,6 +14,7 @@
     <description>One Stop Moms 2 — Danish VAT One Stop Shop system (parent POM)</description>
 
     <modules>
+        <module>audit-trail-commons</module>
         <module>oces3-certificate-parser</module>
         <module>keycloak-oauth2-starter</module>
         <module>skat-design-system</module>
@@ -66,6 +67,9 @@
 
         <!-- SKAT Design System WebJar -->
         <skat-design-system.version>1.0.0</skat-design-system.version>
+
+        <!-- Audit trail commons — JPA auditing, AuditContextFilter, CLS event shipping -->
+        <audit-trail-commons.version>1.0</audit-trail-commons.version>
 
         <!-- Build / quality plugins -->
         <spotless.version>2.43.0</spotless.version>
@@ -165,6 +169,11 @@
                 <groupId>dk.ufst.opendebt</groupId>
                 <artifactId>skat-design-system</artifactId>
                 <version>${skat-design-system.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dk.ufst</groupId>
+                <artifactId>audit-trail-commons</artifactId>
+                <version>${audit-trail-commons.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -58,6 +58,11 @@ otel:
   service:
     name: ${spring.application.name}
 
+opendebt:
+  audit:
+    cls:
+      enabled: false   # Set to true and configure endpoint in production via env/configmap
+
 osm2:
   immudb:
     host: ${IMMUDB_HOST:localhost}
