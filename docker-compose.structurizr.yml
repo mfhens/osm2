@@ -10,7 +10,7 @@
 
 services:
   structurizr:
-    image: structurizr/lite
+    image: structurizr/structurizr
     command: ["local"]
     container_name: osm2-structurizr
     restart: unless-stopped
