@@ -28,5 +28,5 @@ The following principles govern all architectural decisions for osm2:
 
 - Every architecture review (`solution-architecture-reviewer`) checks conformance to these principles explicitly.
 - Deviations are not rejected silently — they must be documented as a new ADR and escalated for human review.
-- New principles are added via ADR (new file in `docs/adr/`), not by editing this document.
+- New principles are added via ADR (new file in `architecture/adr/`), not by editing this document.
 - [STUB — add osm2-specific principles below this line as the team refines the architecture]

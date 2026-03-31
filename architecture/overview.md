@@ -4,7 +4,7 @@
 
 For the machine-readable architecture model, see `architecture/workspace.dsl`.
 For architecture policies, see `architecture/policies.yaml`.
-For architectural principles and decisions, see `docs/adr/`.
+For architectural principles and decisions, see `architecture/adr/`.
 
 ---
 
@@ -40,7 +40,7 @@ osm2 is a second-generation geospatial data processing system built around OpenS
 
 ## Key Architectural Decisions
 
-See `docs/adr/` for the full decision log.
+See `architecture/adr/` for the full decision log.
 
 | ADR | Title | Status |
 |---|---|---|

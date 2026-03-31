@@ -262,7 +262,7 @@ Required secrets: `SONAR_TOKEN`, `NVD_API_KEY`, `GITHUB_TOKEN` (auto).
 
 | Concern | Tool |
 |---|---|
-| Architecture decisions | ADRs in `docs/adr/` (Markdown, numbered `NNNN-title.md`) |
+| Architecture decisions | ADRs in `architecture/adr/` (Markdown, numbered `NNNN-title.md`) |
 | C4 model | Structurizr DSL (`architecture/workspace.dsl`) |
 | Policy enforcement | `architecture/policies.yaml` |
 | Documentation site | MkDocs (`mkdocs.yml`; `docs/site/`) |
@@ -350,7 +350,7 @@ When using this blueprint to start a new project, verify each item:
 - [ ] `architecture/workspace.dsl` Structurizr DSL scaffolded
 - [ ] `architecture/policies.yaml` created
 - [ ] `AGENTS.md` created (agent pipeline documentation)
-- [ ] `docs/adr/` directory with ADR-0001 (record decisions)
+- [ ] `architecture/adr/` directory with ADR-0001 (record decisions)
 - [ ] `petitions/program-status.yaml` created (delivery backlog)
 - [ ] `.factory/` directory with droid definitions
 - [ ] MkDocs site scaffolded (`mkdocs.yml` + `docs/site/`)

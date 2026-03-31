@@ -10,8 +10,8 @@ osm2 implements the EU OSS (One Stop Shop) regime for taxable persons and interm
 
 ## Quick Links
 
-- [Architecture Overview](architecture-overview.md)
-- [Architecture Decision Records](adr/0001-architecture-principles.md)
+- [Architecture Overview](../architecture/overview.md)
+- [Architecture Decision Records](../architecture/adr/0001-architecture-principles.md)
 - [OSS-01 — Scheme Eligibility](../petitions/OSS-01/OSS-01.md)
 
 ## System Context

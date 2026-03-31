@@ -79,7 +79,7 @@ Architecture is governed using Structurizr DSL. Key files:
 | `architecture/workspace.dsl` | Canonical C4 model — updated by `solution-architect`, maintained by `implementation-doc-sync` |
 | `architecture/policies.yaml` | Architecture policy set — evaluated by `c4-model-validator` and `c4-architecture-governor` |
 
-See `docs/adr/` for architectural decision records that govern all design choices.
+See `architecture/adr/` for architectural decision records that govern all design choices.
 
 ## Component Definitions
 
