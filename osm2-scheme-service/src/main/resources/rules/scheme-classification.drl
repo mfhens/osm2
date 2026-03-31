@@ -25,8 +25,7 @@ package dk.osm2.scheme.rules;
 import dk.osm2.scheme.dto.SchemeClassificationRequest;
 import dk.osm2.scheme.dto.SchemeClassificationRequest.SupplyType;
 import dk.osm2.scheme.dto.SchemeClassificationRequest.EnrolledScheme;
-import dk.osm2.scheme.service.SchemeClassificationService.ClassificationResult;
-import java.math.BigDecimal;
+import dk.osm2.scheme.service.ClassificationResult;
 
 
 // ============================================================================
@@ -66,8 +65,8 @@ rule "FR-06-import-value-exceeded"
         $req : SchemeClassificationRequest(
                     supplyType == SupplyType.IMPORT_GOODS,
                     excisable != true,
-                    shipmentValue != null,
-                    shipmentValue.compareTo(new BigDecimal("150")) > 0)
+                    shipmentValue != null)
+        eval($req.getShipmentValue().compareTo(new java.math.BigDecimal("150")) > 0)
         $res : ClassificationResult(status == null)
     then
         $res.status  = "INELIGIBLE";
@@ -258,8 +257,8 @@ rule "FR-01-import-scheme"
         $req : SchemeClassificationRequest(
                     supplyType == SupplyType.IMPORT_GOODS,
                     excisable != true,
-                    shipmentValue != null,
-                    shipmentValue.compareTo(new BigDecimal("150")) <= 0)
+                    shipmentValue != null)
+        eval($req.getShipmentValue().compareTo(new java.math.BigDecimal("150")) <= 0)
         $res : ClassificationResult(status == null)
     then
         $res.status = "ELIGIBLE";
@@ -281,6 +280,7 @@ end
  */
 rule "FR-03-identification-ms-free-choice"
     salience 400
+    no-loop true
     when
         $req : SchemeClassificationRequest(selectedIdentificationMemberState != null)
         $res : ClassificationResult(scheme == "NON_EU")
@@ -325,8 +325,8 @@ rule "FR-04-id-ms-single-fe"
         $req : SchemeClassificationRequest(
                     hasEuSeatOfEconomicActivity == false,
                     hasFixedEstablishmentInEu   == true,
-                    fixedEstablishmentCountries != null,
-                    fixedEstablishmentCountries.size() == 1)
+                    fixedEstablishmentCountries != null)
+        eval($req.getFixedEstablishmentCountries().size() == 1)
         $res : ClassificationResult(scheme == "EU", identificationMemberState == null)
     then
         $res.identificationMemberState = $req.getFixedEstablishmentCountries().get(0);
@@ -345,8 +345,8 @@ rule "FR-04-id-ms-multiple-fe-chosen"
         $req : SchemeClassificationRequest(
                     hasEuSeatOfEconomicActivity == false,
                     fixedEstablishmentCountries != null,
-                    fixedEstablishmentCountries.size() > 1,
                     selectedIdentificationMemberState != null)
+        eval($req.getFixedEstablishmentCountries().size() > 1)
         $res : ClassificationResult(scheme == "EU", identificationMemberState == null)
     then
         $res.identificationMemberState = $req.getSelectedIdentificationMemberState();
@@ -541,13 +541,13 @@ end
  */
 rule "FR-07-rule-hierarchy-secondary"
     salience 100
+    no-loop true
     when
         $req : SchemeClassificationRequest(queryRuleHierarchy == true, enrolledScheme != null)
         $res : ClassificationResult()
     then
         $res.applicableRules.add("ML almindelige regler (sekundær)");
         $res.legalBasis.add("DA16.3.1.3 — ML almindelige regler (sekundær)");
-        update($res);
 end
 
 /**
@@ -558,11 +558,11 @@ end
  */
 rule "FR-07-rule-hierarchy-tertiary"
     salience 50
+    no-loop true
     when
         $req : SchemeClassificationRequest(queryRuleHierarchy == true, hasEuSeatOfEconomicActivity == false)
         $res : ClassificationResult()
     then
         $res.applicableRules.add("Opkrævningsloven (tertiær)");
         $res.legalBasis.add("DA16.3.1.3 — Opkrævningsloven (tertiær)");
-        update($res);
 end

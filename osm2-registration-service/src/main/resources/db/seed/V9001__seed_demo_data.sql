@@ -17,7 +17,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO scheme_registration (id, registrant_id, scheme_type, valid_from,
                                  notification_submitted_at)
-VALUES ('sr000001-0000-0000-0000-000000000001',
+VALUES ('00000001-0000-0000-0000-000000000001',
         '11111111-1111-1111-1111-111111111111', 'EU', '2023-01-01',
         '2022-12-18 10:00:00+01')
 ON CONFLICT DO NOTHING;
@@ -32,7 +32,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO scheme_registration (id, registrant_id, scheme_type, valid_from,
                                  notification_submitted_at)
-VALUES ('sr000002-0000-0000-0000-000000000001',
+VALUES ('00000002-0000-0000-0000-000000000001',
         '22222222-2222-2222-2222-222222222222', 'NON_EU', '2022-07-01',
         '2022-06-20 09:00:00+02')
 ON CONFLICT DO NOTHING;
@@ -47,7 +47,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO scheme_registration (id, registrant_id, scheme_type, valid_from,
                                  notification_submitted_at)
-VALUES ('sr000003-0000-0000-0000-000000000001',
+VALUES ('00000003-0000-0000-0000-000000000001',
         '33333333-3333-3333-3333-333333333333', 'IMPORT', '2021-07-01',
         '2021-07-01 00:00:00+00')
 ON CONFLICT DO NOTHING;

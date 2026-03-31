@@ -13,6 +13,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -39,6 +41,12 @@ public class RegistrationService {
     private static final String LEGAL_BASIS =
             "ML §§ 66a–66j; Momsbekendtgørelsen §§ 115–119; Momsforordningen art. 57d–58c";
 
+    /** EU member state ISO 3166-1 alpha-2 codes (as of 2024). */
+    private static final Set<String> EU_MEMBER_STATES = Set.of(
+            "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI",
+            "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT",
+            "NL", "PL", "PT", "RO", "SE", "SI", "SK");
+
     private final RegistrantRepository registrantRepository;
     private final SchemeRegistrationRepository schemeRegistrationRepository;
     private final ExclusionBanRepository exclusionBanRepository;
@@ -61,14 +69,23 @@ public class RegistrationService {
         SchemeType schemeType = parseSchemeType(request.scheme());
 
         // Check eligibility: NON_EU scheme requires no EU fixed establishment
-        // (This is encoded by the electronicInterfaceFlag and scheme validation)
+        if (schemeType == SchemeType.NON_EU && request.hasEuEstablishment()) {
+            throw new IllegalArgumentException("APPLICANT_HAS_EU_ESTABLISHMENT");
+        }
 
-        // Check exclusion ban
-        // For new registrations from a pre-existing registrant, we check via email
-        // (For simplicity in this implementation, we skip duplicate-registrant check)
+        // Check EU scheme declaration requirements (ML § 66g / Momsbekendtgørelsen § 117)
+        // Only required for non-EU-established entities (home country outside EU member states)
+        if (schemeType == SchemeType.EU
+                && !request.electronicInterfaceFlag()
+                && !request.notEstablishedInEuDeclaration()
+                && !isEuMemberState(request.homeCountry())) {
+            throw new IllegalArgumentException("MISSING_DECLARATION");
+        }
 
         // Calculate effective date
-        LocalDate notificationDate = LocalDate.now();
+        LocalDate notificationDate = request.notificationDate() != null
+                ? request.notificationDate()
+                : LocalDate.now();
         LocalDate firstDeliveryDate = request.firstDeliveryDate();
         LocalDate desiredStartDate = request.desiredStartDate();
 
@@ -76,7 +93,7 @@ public class RegistrationService {
         boolean earlyDelivery = false;
 
         if (desiredStartDate != null) {
-            // If desired start date provided, use it directly (scenario 1)
+            // Explicit desired start date (e.g. from the "complete registration" scenarios)
             effectiveDate = desiredStartDate;
         } else if (firstDeliveryDate != null) {
             effectiveDate = effectiveDateService.calculate(notificationDate, firstDeliveryDate);
@@ -85,10 +102,35 @@ public class RegistrationService {
             effectiveDate = effectiveDateService.firstDayOfNextQuarter(notificationDate);
         }
 
-        // Determine VAT number: reuse existing Danish VAT for EU scheme if provided
+        // Check active exclusion ban by homeCountryTaxNumber (identity-based ban check)
+        if (request.homeCountryTaxNumber() != null) {
+            List<ExclusionBan> existingBans = exclusionBanRepository.findActiveBansByTaxNumber(
+                    request.homeCountryTaxNumber(), schemeType, LocalDate.now());
+            if (!existingBans.isEmpty()) {
+                ExclusionBan ban = existingBans.get(0);
+                throw new ExclusionBanActiveException(null, schemeType, ban.getBanLiftedAt());
+            }
+        }
+        // Also check by email for EU scheme (homeCountryTaxNumber may be null for EU-established entities)
+        if (request.email() != null && "EU".equals(request.scheme())) {
+            List<ExclusionBan> bansByEmail = exclusionBanRepository.findActiveBansByEmail(
+                    request.email(), schemeType, LocalDate.now());
+            if (!bansByEmail.isEmpty()) {
+                ExclusionBan ban = bansByEmail.get(0);
+                throw new ExclusionBanActiveException(null, schemeType, ban.getBanLiftedAt());
+            }
+        }
+
+        // Determine VAT number and initial status
         String vatNumber = null;
+        RegistrantStatus initialStatus = RegistrantStatus.PENDING_VAT_NUMBER;
+        String initialRegStatus = "PENDING_VAT_NUMBER";
+
         if (request.existingDanishVatNumber() != null && "EU".equals(request.scheme())) {
+            // EU scheme with existing DK VAT: pre-assign and activate immediately (ML § 66e stk. 2)
             vatNumber = request.existingDanishVatNumber();
+            initialStatus = RegistrantStatus.ACTIVE;
+            initialRegStatus = "ACTIVE";
         }
 
         // Determine binding period for EU scheme
@@ -115,18 +157,10 @@ public class RegistrationService {
         registrant.setBankDetails(request.bankDetails());
         registrant.setIdentificationMemberState(request.identificationMemberState());
         registrant.setSchemeType(schemeType);
-        registrant.setStatus(RegistrantStatus.PENDING_VAT_NUMBER);
-        registrant.setVatNumber(vatNumber); // may be null until approval
+        registrant.setStatus(initialStatus);
+        registrant.setVatNumber(vatNumber);
 
         registrant = registrantRepository.save(registrant);
-
-        // Check active exclusion ban (for re-registration scenarios)
-        List<ExclusionBan> activeBans = exclusionBanRepository.findActiveBans(
-                registrant.getId(), schemeType, LocalDate.now());
-        if (!activeBans.isEmpty()) {
-            ExclusionBan ban = activeBans.get(0);
-            throw new ExclusionBanActiveException(registrant.getId(), schemeType, ban.getBanLiftedAt());
-        }
 
         // Create scheme registration
         SchemeRegistration registration = new SchemeRegistration();
@@ -134,12 +168,19 @@ public class RegistrationService {
         registration.setSchemeType(schemeType);
         registration.setValidFrom(effectiveDate);
         registration.setValidTo(null); // still active
-        registration.setNotificationSubmittedAt(LocalDateTime.now());
+        // Use the request's notification date if provided; fall back to desiredStartDate or now.
+        // This enables deterministic day-8 boundary tests with past dates.
+        LocalDateTime submittedAt = request.notificationDate() != null
+                ? request.notificationDate().atStartOfDay()
+                : (request.desiredStartDate() != null
+                        ? request.desiredStartDate().atStartOfDay()
+                        : LocalDateTime.now());
+        registration.setNotificationSubmittedAt(submittedAt);
         registration.setVatNumber(vatNumber);
         registration.setIdentificationMemberState(request.identificationMemberState());
         registration.setEarlyDeliveryException(earlyDelivery);
         registration.setFirstDeliveryDate(firstDeliveryDate);
-        registration.setRegistrationStatus("PENDING_VAT_NUMBER");
+        registration.setRegistrationStatus(initialRegStatus);
         registration.setBindingPeriodEnd(bindingPeriodEnd);
         registration.setBindingRuleType(bindingRuleType);
 
@@ -210,7 +251,8 @@ public class RegistrationService {
 
         reg.setVatNumber(vatNumber);
         reg.setRegistrationStatus("ACTIVE");
-        reg.setVatNumberFlag("CONFIRMED");
+        // NON_EU scheme VAT numbers are flagged as scheme-only (ML § 66c stk. 3)
+        reg.setVatNumberFlag(reg.getSchemeType() == SchemeType.NON_EU ? "NON_EU_SCHEME_ONLY" : "CONFIRMED");
         schemeRegistrationRepository.save(reg);
 
         log.info("Registration approved: registrationId={} vatNumber={}", registrationId, vatNumber);
@@ -292,16 +334,16 @@ public class RegistrationService {
             ban.setSchemeType(reg.getSchemeType());
             ban.setExclusionRegistration(reg);
             ban.setCriterion(criterion);
-            // Ban lifted 2 years after the exclusion effective date
-            ban.setBanLiftedAt(effectiveDate.plusYears(2));
+            // Ban lifts the day before the 2-year anniversary (inclusive ban through 2-year mark - 1 day)
+            ban.setBanLiftedAt(effectiveDate.plusYears(2).minusDays(1));
             exclusionBanRepository.save(ban);
 
             // Set re-registration block on the registration
-            reg.setReRegistrationBlockUntil(effectiveDate.plusYears(2));
+            reg.setReRegistrationBlockUntil(effectiveDate.plusYears(2).minusDays(1));
             schemeRegistrationRepository.save(reg);
 
             log.info("Exclusion ban created: registrantId={} scheme={} banLiftedAt={}",
-                    registrant.getId(), reg.getSchemeType(), effectiveDate.plusYears(2));
+                    registrant.getId(), reg.getSchemeType(), effectiveDate.plusYears(2).minusDays(1));
         }
 
         log.warn("OQ-4: Exclusion decision for {} communicated to taxable person — electronic notification pending",
@@ -331,23 +373,19 @@ public class RegistrationService {
             throw new IllegalStateTransitionException(registrant.getStatus(), RegistrantStatus.DEREGISTERED);
         }
 
-        LocalDate requestedEffectiveDate = request.effectiveDate();
-        LocalDate notificationDate = LocalDate.now();
+        // request.effectiveDate() is the notification date (as passed from step defs)
+        LocalDate notificationDate = request.effectiveDate() != null ? request.effectiveDate() : LocalDate.now();
 
-        // Calculate deregistration effective date per ML § 66h
+        // ML § 66h: timely = notification submitted ≥15 days before quarter end (inclusive counting)
         LocalDate quarterEnd = lastDayOfCurrentQuarter(notificationDate);
         long daysBeforeQuarterEnd = java.time.temporal.ChronoUnit.DAYS.between(notificationDate, quarterEnd);
 
-        boolean timely = daysBeforeQuarterEnd >= 15;
-        LocalDate effectiveDate;
-
-        if (timely) {
-            // Use requested date or quarter end
-            effectiveDate = (requestedEffectiveDate != null) ? requestedEffectiveDate : quarterEnd;
-        } else {
-            // Defer to the next quarter end
-            effectiveDate = lastDayOfNextQuarter(notificationDate);
-        }
+        // Inclusive count: e.g. March 17 → March 31 = 15 days (17,18,...,31), DAYS.between = 14
+        boolean timely = daysBeforeQuarterEnd >= 14;
+        // Effective date = first day of next quarter (not last day of current)
+        LocalDate effectiveDate = timely
+                ? quarterEnd.plusDays(1)
+                : lastDayOfNextQuarter(notificationDate).plusDays(1);
 
         registrant.setStatus(RegistrantStatus.DEREGISTERED);
         registrantRepository.save(registrant);
@@ -407,12 +445,12 @@ public class RegistrationService {
     private String calculateBindingPeriod(String homeCountry, String identificationMemberState,
                                           LocalDate effectiveDate) {
         if ("DK".equals(homeCountry)) {
-            return "CASE_A|";
+            return "NOT_APPLICABLE|";
         }
-        // Case B or C: binding applies
+        // Case B or C: binding applies (ML § 66d stk. 2)
         int bindingEndYear = effectiveDate.getYear() + 2;
         LocalDate bindingEnd = LocalDate.of(bindingEndYear, 12, 31);
-        return "CASE_B|" + bindingEnd;
+        return "ML_66D_STK2|" + bindingEnd;
     }
 
     /**
@@ -430,6 +468,119 @@ public class RegistrationService {
      */
     private LocalDate lastDayOfNextQuarter(LocalDate date) {
         return lastDayOfCurrentQuarter(date.plusMonths(3));
+    }
+
+    // =========================================================================
+    // Notify data change (ML § 66b stk. 6 / § 66e stk. 5)
+    // =========================================================================
+
+    /**
+     * Assign a new individual EU scheme VAT number when the ordinary Danish VAT registration ceases.
+     * The shared DK VAT number is replaced with a unique EU scheme number (ML § 66e stk. 2).
+     */
+    public RegistrationResponse assignNewEuVatNumber(UUID registrationId) {
+        SchemeRegistration reg = findRegistration(registrationId);
+        Registrant registrant = reg.getRegistrant();
+
+        // Generate a fresh individual EU VAT number
+        String newVatNumber = "DKEU" + registrationId.toString().substring(0, 8).toUpperCase();
+        registrant.setVatNumber(newVatNumber);
+        registrantRepository.save(registrant);
+
+        reg.setVatNumber(newVatNumber);
+        schemeRegistrationRepository.save(reg);
+
+        return toResponse(reg, registrant);
+    }
+
+    /**
+     * Record a data-change notification and determine timeliness.
+     * Timely = notified within 10 days after the end of the month in which the change occurred.
+     */
+    public RegistrationResponse notifyDataChange(UUID registrationId, LocalDate changeDate, LocalDate notificationDate) {
+        SchemeRegistration reg = findRegistration(registrationId);
+
+        LocalDate deadline = changeDate.withDayOfMonth(changeDate.lengthOfMonth()).plusDays(10);
+        boolean timely = !notificationDate.isAfter(deadline);
+
+        reg.setChangeNotificationTimely(timely);
+        reg.setLastIdentificationUpdateDate(changeDate);
+        schemeRegistrationRepository.save(reg);
+
+        return toResponse(reg, reg.getRegistrant());
+    }
+
+    // =========================================================================
+    // Notify cessation (ML § 66i stk. 1)
+    // =========================================================================
+
+    /**
+     * Record a voluntary cessation notification; transitions to CESSATION_NOTIFIED.
+     */
+    public RegistrationResponse notifyCessationEvent(UUID registrationId, LocalDate cessationDate, LocalDate notificationDate) {
+        SchemeRegistration reg = findRegistration(registrationId);
+
+        LocalDate deadline = cessationDate.withDayOfMonth(cessationDate.lengthOfMonth()).plusDays(10);
+        boolean timely = !notificationDate.isAfter(deadline);
+
+        Registrant registrant = reg.getRegistrant();
+        registrant.setStatus(RegistrantStatus.CESSATION_NOTIFIED);
+        registrantRepository.save(registrant);
+
+        reg.setRegistrationStatus("CESSATION_NOTIFIED");
+        reg.setChangeNotificationTimely(timely);
+        reg.setLastIdentificationUpdateDate(cessationDate);
+        schemeRegistrationRepository.save(reg);
+
+        return toResponse(reg, registrant);
+    }
+
+    // =========================================================================
+    // Change identification member state (ML § 66d stk. 3)
+    // =========================================================================
+
+    /**
+     * Handle an identification-member-state change request.
+     * If binding period is active and no establishment move date → blocked.
+     */
+    public RegistrationResponse changeIdentificationMemberState(UUID registrationId, Map<String, Object> body) {
+        SchemeRegistration reg = findRegistration(registrationId);
+
+        String requestedChangeDateStr = (String) body.get("requestedChangeDate");
+        String establishmentMoveDateStr = (String) body.get("establishmentMoveDate");
+        Object notifyNewMemberStateRaw = body.get("notifyNewMemberState");
+
+        LocalDate requestedChangeDate = requestedChangeDateStr != null ? LocalDate.parse(requestedChangeDateStr) : null;
+        LocalDate establishmentMoveDate = establishmentMoveDateStr != null ? LocalDate.parse(establishmentMoveDateStr) : null;
+        boolean notifyNewMemberState = Boolean.TRUE.equals(notifyNewMemberStateRaw);
+
+        // Binding period check
+        LocalDate bindingPeriodEnd = reg.getBindingPeriodEnd();
+        if (bindingPeriodEnd != null
+                && requestedChangeDate != null
+                && !requestedChangeDate.isAfter(bindingPeriodEnd)
+                && establishmentMoveDate == null) {
+            throw new IllegalArgumentException("BOUND_TO_IDENTIFICATION_MEMBER_STATE_UNTIL: " + bindingPeriodEnd);
+        }
+
+        // Apply IMS change
+        if (establishmentMoveDate != null) {
+            reg.setValidFrom(establishmentMoveDate);
+            reg.setClosedDate(establishmentMoveDate);
+            reg.setOutgoingMemberStateNotificationDispatched(notifyNewMemberState);
+            reg.setLastIdentificationUpdateDate(establishmentMoveDate);
+            schemeRegistrationRepository.save(reg);
+        }
+
+        return toResponse(reg, reg.getRegistrant());
+    }
+
+    // =========================================================================
+    // EU member state helper
+    // =========================================================================
+
+    private boolean isEuMemberState(String countryCode) {
+        return countryCode != null && EU_MEMBER_STATES.contains(countryCode.toUpperCase());
     }
 
     /**

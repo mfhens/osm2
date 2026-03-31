@@ -1,20 +1,20 @@
 package dk.osm2.registration;
 
 import io.cucumber.spring.CucumberContextConfiguration;
+import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.io.IOException;
 
 /**
  * Spring Boot context configuration for OSS-02 Cucumber integration tests.
  *
- * Starts the full registration-service application on a random port backed by a
- * Testcontainers PostgreSQL instance so that step definitions can exercise the
- * real HTTP layer end-to-end.
+ * Starts the full registration-service application on a random port backed by an
+ * embedded PostgreSQL instance (io.zonky.test:embedded-postgres) so that step
+ * definitions can exercise the real HTTP layer end-to-end without Docker.
  *
  * @ActiveProfiles("demo") activates the permissive security configuration
  * provided by keycloak-oauth2-starter, bypassing OAuth2 token requirements
@@ -27,20 +27,27 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @CucumberContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("demo")
-@Testcontainers
 public class CucumberSpringConfiguration {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
-            .withDatabaseName("osm2_registration")
-            .withUsername("osm2_registration")
-            .withPassword("osm2_registration");
+    static final EmbeddedPostgres POSTGRES;
+
+    static {
+        try {
+            POSTGRES = EmbeddedPostgres.start();
+        } catch (IOException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.url",
+                () -> POSTGRES.getJdbcUrl("postgres", "postgres")
+                        + "&currentSchema=registration&stringtype=unspecified");
+        registry.add("spring.datasource.username", () -> "postgres");
+        registry.add("spring.datasource.password", () -> "");
         registry.add("spring.flyway.default-schema", () -> "registration");
+        registry.add("server.error.include-message", () -> "always");
     }
 }
+

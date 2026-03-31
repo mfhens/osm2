@@ -41,13 +41,11 @@ public class NotificationService {
      * Check whether the day-8 approval deadline has been exceeded for a pending registration
      * and, if so, send a delay notification to the taxable person.
      *
-     * <p>Sets {@code delayNotificationSent = true} and {@code expectedAssignmentDate}
-     * on the registration when the deadline is exceeded.
-     *
      * @param registrationId the registration to evaluate
+     * @param evaluationDate the date from which to measure (prevents test date drift)
      * @return updated {@link RegistrationResponse} with delay-notification flags set
      */
-    public RegistrationResponse checkAndSendDelayNotification(UUID registrationId) {
+    public RegistrationResponse checkAndSendDelayNotification(UUID registrationId, LocalDate evaluationDate) {
         SchemeRegistration reg = schemeRegistrationRepository.findById(registrationId)
                 .orElseThrow(() -> new RegistrationNotFoundException(registrationId));
 
@@ -55,15 +53,14 @@ public class NotificationService {
             return registrationService.toResponse(reg, reg.getRegistrant());
         }
 
-        // Check if the 8-day window from notification submission has elapsed
         LocalDate submittedDate = reg.getNotificationSubmittedAt() != null
                 ? reg.getNotificationSubmittedAt().toLocalDate()
                 : reg.getValidFrom();
 
         LocalDate deadline = submittedDate.plusDays(APPROVAL_DEADLINE_DAYS);
 
-        if (!LocalDate.now().isBefore(deadline) && "PENDING_VAT_NUMBER".equals(reg.getRegistrationStatus())) {
-            LocalDate expectedAssignment = LocalDate.now().plusDays(EXPECTED_ASSIGNMENT_LEAD_DAYS);
+        if (!evaluationDate.isBefore(deadline) && "PENDING_VAT_NUMBER".equals(reg.getRegistrationStatus())) {
+            LocalDate expectedAssignment = evaluationDate.plusDays(EXPECTED_ASSIGNMENT_LEAD_DAYS);
             reg.setDelayNotificationSent(true);
             reg.setExpectedAssignmentDate(expectedAssignment);
             schemeRegistrationRepository.save(reg);

@@ -114,7 +114,7 @@ public class TransitionalComplianceService {
         if (reg.isTransitionalUpdateOverdue()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "TRANSITIONAL_UPDATE_REQUIRED: Cannot open return period until identification update is submitted.");
+                    "TRANSITIONAL UPDATE REQUIRED: Cannot open return period until identification update is submitted.");
         }
 
         log.info("Return period opening allowed: registrationId={}", registrationId);

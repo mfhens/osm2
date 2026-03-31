@@ -3,7 +3,6 @@ package dk.osm2.scheme.service;
 import dk.osm2.scheme.dto.SchemeClassificationRequest;
 import dk.osm2.scheme.dto.SchemeClassificationRequest.SupplyType;
 import dk.osm2.scheme.dto.SchemeClassificationResult;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.kie.api.runtime.KieContainer;
@@ -17,8 +16,8 @@ import org.springframework.stereotype.Service;
  * (FR-01 through FR-08) run inside a per-request KieSession and determine the applicable scheme,
  * identification member state, consumption member state, and legal citations.
  *
- * <p>The inner {@link ClassificationResult} class acts as a mutable Drools fact: rules modify its
- * public fields and call {@code update()} so that downstream rules see the updated values.
+ * <p>{@link ClassificationResult} acts as a mutable Drools fact: rules modify its public fields
+ * and call {@code update()} so that downstream rules see the updated values.
  *
  * <p>Petition: OSS-01 / ML §§ 66, 66a, 66d, 66m / MSD artikler 358, 358a, 369a, 369l
  */
@@ -73,9 +72,9 @@ public class SchemeClassificationService {
                     List.of());
         }
 
-        // ------------------------------------------------------------------
-        // Drools — FR-01 through FR-08
-        // ------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // Drools — FR-01 through FR-08
+    // -----------------------------------------------------------------------
         ClassificationResult result = new ClassificationResult();
         KieSession session = kieContainer.newKieSession();
         try {
@@ -94,43 +93,5 @@ public class SchemeClassificationService {
                 result.legalBasis,
                 result.message,
                 result.applicableRules);
-    }
-
-    // -----------------------------------------------------------------------
-    // Inner mutable fact — inserted into each KieSession so rules can modify it
-    // -----------------------------------------------------------------------
-
-    /**
-     * Mutable result object inserted into the Drools session as a working-memory fact.
-     *
-     * <p>Fields are public so MVEL can write them directly without reflection on private setters.
-     * Rules call {@code update($res)} after modifying fields so that Drools re-evaluates dependent
-     * rules.
-     */
-    public static class ClassificationResult {
-
-        /** Classification outcome string (e.g. {@code "ELIGIBLE"}, {@code "NO_OSS_SCHEME"}). */
-        public String status;
-
-        /** Determined scheme code (e.g. {@code "NON_EU"}, {@code "EU"}, {@code "IMPORT"}). */
-        public String scheme;
-
-        /** Determined identification member state (country name or code). */
-        public String identificationMemberState;
-
-        /** Determined consumption member state (country name or code). */
-        public String consumptionMemberState;
-
-        /**
-         * Legal basis citations in format {@code "ML § <para> / MSD artikel <art>"} or
-         * {@code "DA16.3.1.3 — …"}.
-         */
-        public List<String> legalBasis = new ArrayList<>();
-
-        /** Human-readable Danish explanation for INELIGIBLE / NO_OSS_SCHEME / error outcomes. */
-        public String message;
-
-        /** Applicable rule layers (FR-07 / DA16.3.1.3). */
-        public List<String> applicableRules = new ArrayList<>();
     }
 }

@@ -39,4 +39,30 @@ public interface ExclusionBanRepository extends JpaRepository<ExclusionBan, UUID
             @Param("registrantId") UUID registrantId,
             @Param("schemeType") SchemeType schemeType,
             @Param("today") LocalDate today);
+
+    /**
+     * Find active exclusion bans by homeCountryTaxNumber across registrant entities.
+     * Used for re-registration ban checks where a new registrant is created.
+     */
+    @Query("SELECT eb FROM ExclusionBan eb " +
+           "WHERE eb.registrant.homeCountryTaxNumber = :taxNumber " +
+           "AND eb.schemeType = :schemeType " +
+           "AND eb.banLiftedAt > :today")
+    List<ExclusionBan> findActiveBansByTaxNumber(
+            @Param("taxNumber") String taxNumber,
+            @Param("schemeType") SchemeType schemeType,
+            @Param("today") LocalDate today);
+
+    /**
+     * Find active exclusion bans by email — used for EU scheme re-registrations
+     * where homeCountryTaxNumber is null.
+     */
+    @Query("SELECT eb FROM ExclusionBan eb " +
+           "WHERE eb.registrant.email = :email " +
+           "AND eb.schemeType = :schemeType " +
+           "AND eb.banLiftedAt > :today")
+    List<ExclusionBan> findActiveBansByEmail(
+            @Param("email") String email,
+            @Param("schemeType") SchemeType schemeType,
+            @Param("today") LocalDate today);
 }

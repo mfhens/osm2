@@ -66,15 +66,21 @@ public class SchemeSwitchService {
 
         // Create a new registration for the target scheme, effective the same date
         Registrant registrant = old.getRegistrant();
+
+        // When switching to EU scheme the registrant establishes in a member state —
+        // homeCountry must be "DK" (identification member state) not the old NON_EU country
+        String effectiveHomeCountry = "EU".equals(newScheme) ? "DK" : registrant.getHomeCountry();
+        String effectiveTaxNumber = "EU".equals(newScheme) ? null : registrant.getHomeCountryTaxNumber();
+
         RegistrationRequest switchRequest = new RegistrationRequest(
                 registrant.getBankDetails(),
                 registrant.getEmail(),
                 registrant.getPhoneNumber(),
                 registrant.getPostalAddress(),
-                registrant.getHomeCountryTaxNumber(),
+                effectiveTaxNumber,
                 registrant.getRegistrantName(),
                 newScheme,
-                registrant.getHomeCountry(),
+                effectiveHomeCountry,
                 List.of(),
                 null,
                 registrant.getIdentificationMemberState(),
@@ -82,15 +88,18 @@ public class SchemeSwitchService {
                 changeDate,    // desiredStartDate = changeDate → no gap
                 false,
                 false,
-                registrant.getVatNumber()
+                null,          // new EU scheme gets a fresh VAT number
+                null,          // notificationDate — not applicable for system-initiated switch
+                false          // hasEuEstablishment — establishment check not needed here
         );
 
         RegistrationResponse newReg = registrationService.submitRegistration(switchRequest);
 
-        // Approve the new registration immediately (scheme switch = automatic approval)
+        // Approve the new registration with a fresh VAT number (not the old scheme's number)
+        String newVatNumber = "DKEU" + newReg.registrationId().toString().substring(0, 8).toUpperCase();
         registrationService.approveRegistration(
                 newReg.registrationId(),
-                new ApprovalRequest(registrant.getVatNumber()));
+                new ApprovalRequest(newVatNumber));
 
         // Record the new scheme effective date on the old registration for the response
         old.setNewSchemeEffectiveDate(changeDate);

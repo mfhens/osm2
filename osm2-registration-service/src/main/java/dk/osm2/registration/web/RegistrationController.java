@@ -76,7 +76,7 @@ public class RegistrationController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "Get registration by ID")
-    public ResponseEntity<RegistrationResponse> getRegistration(@PathVariable UUID id) {
+    public ResponseEntity<RegistrationResponse> getRegistration(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(registrationService.getRegistration(id));
     }
 
@@ -89,7 +89,7 @@ public class RegistrationController {
     @GetMapping
     @Operation(summary = "List registrations for a registrant")
     public ResponseEntity<List<RegistrationResponse>> listByRegistrant(
-            @RequestParam UUID registrantId) {
+            @RequestParam("registrantId") UUID registrantId) {
         return ResponseEntity.ok(registrationService.listByRegistrant(registrantId));
     }
 
@@ -108,7 +108,7 @@ public class RegistrationController {
             summary = "Approve registration and assign VAT number",
             description = "Transitions PENDING_VAT_NUMBER → ACTIVE. Assigns the OSS VAT number.")
     public ResponseEntity<RegistrationResponse> approveRegistration(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody ApprovalRequest request) {
         return ResponseEntity.ok(registrationService.approveRegistration(id, request));
     }
@@ -124,7 +124,7 @@ public class RegistrationController {
             summary = "Reject a pending registration",
             description = "Transitions PENDING_VAT_NUMBER → DEREGISTERED.")
     public ResponseEntity<RegistrationResponse> rejectRegistration(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody @Valid RejectionRequest request) {
         return ResponseEntity.ok(registrationService.rejectRegistration(id, request));
     }
@@ -141,7 +141,7 @@ public class RegistrationController {
             description = "Transitions ACTIVE → EXCLUDED. Creates 2-year ban if criterion is "
                     + "PERSISTENT_NON_COMPLIANCE (ML § 66j stk. 2).")
     public ResponseEntity<RegistrationResponse> excludeRegistration(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody @Valid ExclusionRequest request) {
         return ResponseEntity.ok(registrationService.excludeRegistration(id, request));
     }
@@ -158,7 +158,7 @@ public class RegistrationController {
             description = "Transitions ACTIVE → DEREGISTERED. Effective date per ML § 66h "
                     + "(15-day rule before quarter end).")
     public ResponseEntity<RegistrationResponse> deregisterRegistration(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody @Valid DeregistrationRequest request) {
         return ResponseEntity.ok(registrationService.deregisterRegistration(id, request));
     }
@@ -178,8 +178,13 @@ public class RegistrationController {
     @PostMapping("/{id}/notify-vat-change")
     @Operation(summary = "Notify ordinary VAT registration change")
     public ResponseEntity<RegistrationResponse> notifyVatChange(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
+        String event = (String) body.get("event");
+        if ("ORDINARY_VAT_DEREGISTRATION".equals(event)) {
+            // FR-OSS-02-018: Assign a new individual EU scheme VAT number replacing the shared DK number
+            return ResponseEntity.ok(registrationService.assignNewEuVatNumber(id));
+        }
         return ResponseEntity.ok(registrationService.getRegistration(id));
     }
 
@@ -192,9 +197,9 @@ public class RegistrationController {
     @PostMapping("/{id}/change-identification-member-state")
     @Operation(summary = "Change identification member state")
     public ResponseEntity<RegistrationResponse> changeIdentificationMemberState(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
-        return ResponseEntity.ok(registrationService.getRegistration(id));
+        return ResponseEntity.ok(registrationService.changeIdentificationMemberState(id, body));
     }
 
     /**
@@ -204,22 +209,13 @@ public class RegistrationController {
     @PostMapping("/{id}/notify-change")
     @Operation(summary = "Notify data change")
     public ResponseEntity<RegistrationResponse> notifyChange(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
-        // Mark notification as timely (simplified implementation)
-        RegistrationResponse current = registrationService.getRegistration(id);
-        RegistrationResponse withTimely = new RegistrationResponse(
-                current.registrationId(), current.registrantId(), current.status(),
-                current.effectiveDate(), current.vatNumber(), current.schemeType(),
-                current.legalBasis(), current.earlyDeliveryException(), current.delayNotificationSent(),
-                current.expectedAssignmentDate(), current.vatNumberFlag(), current.bindingPeriodEnd(),
-                current.bindingRuleType(), Boolean.TRUE, // changeNotificationTimely
-                current.complianceFlags(), current.outgoingMemberStateNotificationDispatched(),
-                current.closedDate(), current.deregistrationTimely(), current.deregistrationEffectiveDate(),
-                current.reRegistrationBlockUntil(), current.exclusionCriterion(),
-                current.exclusionDecisionDate(), current.exclusionEffectiveDate(),
-                current.newSchemeEffectiveDate(), current.lastIdentificationUpdateDate());
-        return ResponseEntity.ok(withTimely);
+        LocalDate changeDate = body.containsKey("changeDate")
+                ? LocalDate.parse((String) body.get("changeDate")) : LocalDate.now();
+        LocalDate notificationDate = body.containsKey("notificationDate")
+                ? LocalDate.parse((String) body.get("notificationDate")) : LocalDate.now();
+        return ResponseEntity.ok(registrationService.notifyDataChange(id, changeDate, notificationDate));
     }
 
     /**
@@ -232,17 +228,24 @@ public class RegistrationController {
     @PostMapping("/{id}/notify-cessation")
     @Operation(summary = "Notify cessation of eligible activities")
     public ResponseEntity<RegistrationResponse> notifyCessation(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
-        String cessationDateStr = (String) body.get("cessationDate");
-        if (cessationDateStr != null) {
-            LocalDate cessationDate = LocalDate.parse(cessationDateStr);
+        if (body.containsKey("criterion")) {
+            // Forced exclusion path (OSS-02-06): criterion present
+            String cessationDateStr = (String) body.get("cessationDate");
+            LocalDate cessationDate = cessationDateStr != null ? LocalDate.parse(cessationDateStr) : LocalDate.now();
             LocalDate exclusionEffective = firstDayOfNextQuarter(cessationDate);
-            RegistrationResponse result = registrationService.excludeRegistration(
-                    id, new ExclusionRequest("CESSATION_NOTIFICATION", exclusionEffective, cessationDate));
-            return ResponseEntity.ok(result);
+            String criterion = (String) body.get("criterion");
+            return ResponseEntity.ok(registrationService.excludeRegistration(
+                    id, new ExclusionRequest(criterion, exclusionEffective, cessationDate)));
+        } else {
+            // Voluntary cessation notification path (OSS-02-04): notificationDate present
+            String notificationDateStr = (String) body.get("notificationDate");
+            String cessationDateStr = (String) body.get("cessationDate");
+            LocalDate notificationDate = notificationDateStr != null ? LocalDate.parse(notificationDateStr) : LocalDate.now();
+            LocalDate cessationDate = cessationDateStr != null ? LocalDate.parse(cessationDateStr) : LocalDate.now();
+            return ResponseEntity.ok(registrationService.notifyCessationEvent(id, cessationDate, notificationDate));
         }
-        return ResponseEntity.ok(registrationService.getRegistration(id));
     }
 
     /**
@@ -252,11 +255,13 @@ public class RegistrationController {
     @PostMapping("/{id}/evaluate")
     @Operation(summary = "Trigger system evaluation")
     public ResponseEntity<RegistrationResponse> evaluate(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
         boolean checkDeadline = Boolean.TRUE.equals(body.get("checkDeadlineNotification"));
         if (checkDeadline) {
-            return ResponseEntity.ok(notificationService.checkAndSendDelayNotification(id));
+            String evalDateStr = (String) body.get("evaluationDate");
+            LocalDate evaluationDate = evalDateStr != null ? LocalDate.parse(evalDateStr) : LocalDate.now();
+            return ResponseEntity.ok(notificationService.checkAndSendDelayNotification(id, evaluationDate));
         }
         return ResponseEntity.ok(registrationService.getRegistration(id));
     }
@@ -272,7 +277,7 @@ public class RegistrationController {
     @PostMapping("/{id}/evaluate-cessation")
     @Operation(summary = "Evaluate for presumed cessation")
     public ResponseEntity<RegistrationResponse> evaluateCessation(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
         String noSuppliesSinceStr = (String) body.get("noSuppliesSince");
         String evaluationDateStr  = (String) body.get("evaluationDate");
@@ -300,7 +305,7 @@ public class RegistrationController {
     @PostMapping("/{id}/record-supply")
     @Operation(summary = "Record an eligible supply")
     public ResponseEntity<String> recordSupply(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
         RegistrationResponse reg = registrationService.getRegistration(id);
         if ("EXCLUDED".equals(reg.status())) {
@@ -327,7 +332,7 @@ public class RegistrationController {
             description = "Excludes the current registration and creates a new one for the target scheme "
                     + "with the same effective date, ensuring no gap period (ML § 66j stk. 1 nr. 3).")
     public ResponseEntity<RegistrationResponse> processEstablishmentChange(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
         return ResponseEntity.ok(schemeSwitchService.processEstablishmentChange(id, body));
     }
@@ -348,7 +353,7 @@ public class RegistrationController {
             description = "Sets TRANSITIONAL_UPDATE_OVERDUE flag if registration is pre-July-2021 "
                     + "and no update has been submitted by 1 April 2022 (Direktiv 2017/2455).")
     public ResponseEntity<RegistrationResponse> evaluateTransitional(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
         return ResponseEntity.ok(transitionalComplianceService.evaluateTransitional(id, body));
     }
@@ -364,7 +369,7 @@ public class RegistrationController {
             summary = "Submit transitional identification update",
             description = "Clears the TRANSITIONAL_UPDATE_OVERDUE flag and records the update date.")
     public ResponseEntity<RegistrationResponse> submitIdentificationUpdate(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
         return ResponseEntity.ok(transitionalComplianceService.submitIdentificationUpdate(id, body));
     }
@@ -380,7 +385,7 @@ public class RegistrationController {
             summary = "Open a new quarterly return period",
             description = "Blocked with 400 TRANSITIONAL_UPDATE_REQUIRED if the overdue flag is set.")
     public ResponseEntity<String> openReturnPeriod(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
         transitionalComplianceService.openReturnPeriod(id);
         return ResponseEntity.ok("Return period opened.");
@@ -399,7 +404,7 @@ public class RegistrationController {
     @PostMapping("/{id}/exclude-unauthorised")
     @Operation(summary = "Unauthorised exclusion attempt — always rejected")
     public ResponseEntity<String> excludeUnauthorised(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> body) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body("UNAUTHORISED_EXCLUSION_ACTOR: Only Skatteforvaltningen may initiate forced exclusion.");

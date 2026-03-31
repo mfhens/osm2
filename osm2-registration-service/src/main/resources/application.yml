@@ -5,7 +5,7 @@ spring:
   application:
     name: osm2-registration-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:osm2_registration}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:osm2_registration}?currentSchema=registration&stringtype=unspecified
     username: ${DB_USER:osm2_registration}
     password: ${DB_PASSWORD:osm2_registration}
     driver-class-name: org.postgresql.Driver

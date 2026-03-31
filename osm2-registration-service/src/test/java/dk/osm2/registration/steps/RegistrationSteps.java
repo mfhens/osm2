@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+// ─── Jackson ──────────────────────────────────────────────────────────────────
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 // ─── Spring / TestRestTemplate ────────────────────────────────────────────────
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -19,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 // ─── Cucumber ─────────────────────────────────────────────────────────────────
+import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
@@ -49,6 +53,7 @@ import dk.osm2.registration.dto.ExclusionRequest;
 import dk.osm2.registration.dto.RegistrationRequest;
 import dk.osm2.registration.dto.RegistrationResponse;
 import dk.osm2.registration.dto.RejectionRequest;
+import dk.osm2.registration.repository.ExclusionBanRepository;
 
 /**
  * Cucumber step definitions for OSS-02 — Registrering og afmeldelse.
@@ -96,6 +101,12 @@ public class RegistrationSteps {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ExclusionBanRepository exclusionBanRepository;
 
     // =========================================================================
     // Scenario world state — reset before every scenario by @Before
@@ -256,6 +267,12 @@ public class RegistrationSteps {
         secondRegistrationId       = null;
     }
 
+    /** Clean up exclusion bans after each scenario to prevent cross-scenario DB pollution. */
+    @After
+    public void cleanupExclusionBans() {
+        exclusionBanRepository.deleteAll();
+    }
+
     // =========================================================================
     // Custom Cucumber parameter types
     // =========================================================================
@@ -313,21 +330,33 @@ public class RegistrationSteps {
                 desiredStartDate,
                 electronicInterfaceFlag,
                 notEstablishedInEuDeclaration,
-                existingDanishVatNumber
+                existingDanishVatNumber,
+                notificationDate,
+                hasEuFixedEstablishment
         );
     }
 
     /** POST to /api/v1/registrations and capture response + status. */
     private void submitRegistration() {
         RegistrationRequest request = buildRequest();
-        lastRegistrationResponse = restTemplate.postForEntity(
-                registrationsUrl(), request, RegistrationResponse.class);
-        lastHttpStatus = lastRegistrationResponse.getStatusCode().value();
-        if (lastRegistrationResponse.getStatusCode().is2xxSuccessful()
-                && lastRegistrationResponse.getBody() != null) {
-            currentRegistrationId = lastRegistrationResponse.getBody().registrationId();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<RegistrationRequest> entity = new HttpEntity<>(request, headers);
+        ResponseEntity<String> rawResponse = restTemplate.exchange(
+                registrationsUrl(), HttpMethod.POST, entity, String.class);
+        lastHttpStatus = rawResponse.getStatusCode().value();
+        if (rawResponse.getStatusCode().is2xxSuccessful()) {
+            try {
+                RegistrationResponse responseBody =
+                        objectMapper.readValue(rawResponse.getBody(), RegistrationResponse.class);
+                lastRegistrationResponse = ResponseEntity.status(rawResponse.getStatusCode()).body(responseBody);
+                currentRegistrationId = responseBody.registrationId();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to parse successful registration response: " + rawResponse.getBody(), e);
+            }
         } else {
-            lastErrorBody = lastRegistrationResponse.toString();
+            lastErrorBody = rawResponse.getBody();
+            lastRegistrationResponse = null;
         }
     }
 
@@ -343,13 +372,25 @@ public class RegistrationSteps {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);
-        ResponseEntity<RegistrationResponse> resp = restTemplate.exchange(
-                actionUrl(id, action), HttpMethod.POST, entity, RegistrationResponse.class);
-        lastHttpStatus = resp.getStatusCode().value();
-        lastActionResponse = resp;
-        return resp;
+        ResponseEntity<String> rawResp = restTemplate.exchange(
+                actionUrl(id, action), HttpMethod.POST, entity, String.class);
+        lastHttpStatus = rawResp.getStatusCode().value();
+        if (rawResp.getStatusCode().is2xxSuccessful()) {
+            try {
+                RegistrationResponse respBody = objectMapper.readValue(rawResp.getBody(), RegistrationResponse.class);
+                ResponseEntity<RegistrationResponse> typed = ResponseEntity.status(rawResp.getStatusCode()).body(respBody);
+                lastActionResponse = typed;
+                lastRegistrationResponse = typed;
+                return typed;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to parse action response: " + rawResp.getBody(), e);
+            }
+        } else {
+            lastErrorBody = rawResp.getBody();
+            lastActionResponse = ResponseEntity.status(rawResp.getStatusCode()).body(null);
+            return lastActionResponse;
+        }
     }
-
     /** POST action with a plain Map body (for endpoints whose request DTO has no Java record yet). */
     private ResponseEntity<String> postActionRaw(UUID id, String action, Map<String, Object> body) {
         HttpHeaders headers = new HttpHeaders();
@@ -358,6 +399,7 @@ public class RegistrationSteps {
         ResponseEntity<String> resp = restTemplate.exchange(
                 actionUrl(id, action), HttpMethod.POST, entity, String.class);
         lastHttpStatus = resp.getStatusCode().value();
+        lastErrorBody = resp.getBody();
         return resp;
     }
 
@@ -371,7 +413,10 @@ public class RegistrationSteps {
     private void createActiveRegistration(String schemeType) {
         scheme = schemeType;
         if ("EU".equals(schemeType)) {
-            homeCountry = "DK";
+            // Only default homeCountry to DK if not explicitly set to a non-US EU country
+            if ("US".equals(homeCountry)) {
+                homeCountry = "DK";
+            }
             homeCountryTaxNumber = null;
         }
         submitRegistration();
@@ -465,7 +510,7 @@ public class RegistrationSteps {
     @Then("the registration is accepted with status {string}")
     public void registrationAcceptedWithStatus(String expectedStatus) {
         assertThat(lastHttpStatus)
-                .as("POST /api/v1/registrations must return 2xx — endpoint not yet implemented")
+                .as("POST /api/v1/registrations must return 2xx — got: %s", lastErrorBody)
                 .isBetween(200, 299);
         assertThat(body().status())
                 .as("Registration status must be [%s] — status machine not yet implemented", expectedStatus)
@@ -517,7 +562,6 @@ public class RegistrationSteps {
     /** FR-OSS-02-003 */
     @Given("a taxable person submits a Non-EU scheme registration notification on {localdate}")
     public void taxablePersonSubmitsNonEuNotificationOn(LocalDate date) {
-        desiredStartDate = date;
         notificationDate = date;
         scheme = "NON_EU";
     }
@@ -551,7 +595,6 @@ public class RegistrationSteps {
     @When("they submit the registration notification on {localdate}")
     public void submitRegistrationNotificationOn(LocalDate date) {
         notificationDate = date;
-        desiredStartDate = date;
         submitRegistration();
     }
 
@@ -636,11 +679,12 @@ public class RegistrationSteps {
         assertThat(currentRegistrationId)
                 .as("Registration must be submitted before simulating day-elapsed processing")
                 .isNotNull();
-        // Simulate caseworker approval with VAT number assignment
-        // COMPILE-TIME FAILURE: ApprovalRequest does not exist yet
         String placeholderVat = "DKTEST" + currentRegistrationId.toString().substring(0, 8).toUpperCase();
         ApprovalRequest approval = new ApprovalRequest(placeholderVat);
         postAction(currentRegistrationId, "approve", approval);
+        assertThat(lastHttpStatus)
+                .as("Approval must succeed (2xx) — raw error: %s", lastErrorBody)
+                .isBetween(200, 299);
         fetchRegistration(currentRegistrationId);
     }
 
@@ -761,7 +805,6 @@ public class RegistrationSteps {
 
     @When("they submit a complete EU scheme registration notification on {localdate}")
     public void submitCompleteEuRegistrationNotificationOn(LocalDate date) {
-        desiredStartDate = date;
         notificationDate = date;
         submitRegistration();
     }
@@ -1009,7 +1052,7 @@ public class RegistrationSteps {
     // ── Scenario 24: Case a — no binding period ───────────────────────────────
 
     /** FR-OSS-02-022 */
-    @Given("a taxable person's home establishment is in Denmark (case a)")
+    @Given("^a taxable person's home establishment is in Denmark \\(case a\\)$")
     public void homeEstablishmentInDenmarkCaseA() {
         bindingMemberStateCase = "a";
         homeCountry = "DK";
@@ -1377,6 +1420,11 @@ public class RegistrationSteps {
         assertThat(lastHttpStatus)
                 .as("Re-registration after voluntary deregistration must be accepted — not yet implemented")
                 .isBetween(200, 299);
+    }
+
+    @Then("the re-registration is accepted")
+    public void reRegistrationIsAccepted() {
+        registrationIsAccepted();
     }
 
     @And("no exclusion flag or re-entry block is applied based on the prior deregistration")
@@ -1786,6 +1834,8 @@ public class RegistrationSteps {
 
     @Given("a taxable person's registration is flagged as {string}")
     public void taxablePersonRegistrationFlaggedAs(String flag) {
+        // Create a pre-July-2021 registration so the transitional flag can be set
+        desiredStartDate = java.time.LocalDate.of(2021, 6, 1);
         createActiveRegistration("NON_EU");
         // Simulate setting the flag via evaluation endpoint
         Map<String, Object> body = new HashMap<>();
