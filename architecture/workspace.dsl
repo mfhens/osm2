@@ -25,6 +25,31 @@ workspace "osm2" "One Stop Moms 2 — Danish VAT One Stop Shop system implementi
 
             registrationService = container "osm2-registration-service" "Manages OSS registration and deregistration lifecycle for all three schemes. PII silo: holds taxable person identity data (VAT numbers, addresses, contact details). All other services reference via registrant_id UUID only." "Java 21 / Spring Boot 3.5" "Service" {
                 tags "port:8082" "pii:true"
+
+                // --- Components (OSS-02: registration and deregistration lifecycle) ---
+
+                registrationController = component "RegistrationController" "Exposes 8 REST endpoints under /api/v1/registrations. Validates input via @Valid; delegates all business logic to the service layer. Role-based access enforced via @PreAuthorize." "Spring MVC @RestController"
+
+                registrationSvc = component "RegistrationService" "Orchestrates the registration lifecycle. Enforces the Registrant state machine, checks ExclusionBan before accepting new registrations, delegates effective-date calculation, and persists Registrant + SchemeRegistration aggregates. Handles change notifications and voluntary deregistration." "Spring @Service"
+
+                exclusionSvc = component "ExclusionService" "Records forced exclusion decisions on behalf of Skatteforvaltningen (CASEWORKER role only). Applies two effective-date rules: quarter-start (criteria 1-4 general) or establishment-change date (Momsforordningen art. 58 stk. 2). Creates ExclusionBan rows for PERSISTENT_NON_COMPLIANCE only." "Spring @Service"
+
+                effectiveDateCalcSvc = component "EffectiveDateCalculationService" "Pure stateless calculator for registration effective dates. Implements the quarter-start rule and the early-delivery exception (ML § 66b stk. 2-3, § 66e stk. 2) for registrations, and the 15-day advance-notice rule for voluntary deregistrations. No database access." "Spring @Service"
+
+                vatAssignmentSvc = component "VatAssignmentService" "Manages VAT number assignment lifecycle. Enforces the 8-calendar-day SLA (Momsbekendtgørelsen § 116 stk. 3, § 117 stk. 5). Runs a daily scheduled job to detect SLA breaches and send delay notifications. Handles EU existing-DK-number path (FR-OSS-02-016) and ordinary-registration-cessation transition (FR-OSS-02-018)." "Spring @Service + @Scheduled"
+
+                transitionalComplianceSvc = component "TransitionalComplianceService" "Daily scheduled job that flags pre-July-2021 registrants who have not submitted mandatory identification updates by the 1 April 2022 statutory deadline (FR-OSS-02-038). Blocks new quarterly return periods via registrant status flag consumed by the return-service." "Spring @Service + @Scheduled"
+
+                // Component relationships
+                registrationController -> registrationSvc "Delegates registration, change notification, and deregistration requests to" "Java method call"
+                registrationController -> exclusionSvc "Delegates forced exclusion requests to" "Java method call"
+                registrationController -> vatAssignmentSvc "Delegates VAT number assignment requests to" "Java method call"
+                registrationController -> transitionalComplianceSvc "Delegates transitional identification update requests to" "Java method call"
+
+                registrationSvc -> effectiveDateCalcSvc "Computes registration and deregistration effective dates via" "Java method call"
+                registrationSvc -> exclusionSvc "Delegates scheme-switch exclusion step to" "Java method call"
+                exclusionSvc -> effectiveDateCalcSvc "Computes forced exclusion effective date (quarter-start rule or establishment-change-date override) via" "Java method call"
+                vatAssignmentSvc -> registrationSvc "Updates Registrant status to ACTIVE after VAT number is assigned via" "Java method call"
             }
 
             returnService = container "osm2-return-service" "VAT return filing, corrections, and late-return reminders per OSS regulations. References taxable persons via registrant_id UUID only." "Java 21 / Spring Boot 3.5" "Service" {
