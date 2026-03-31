@@ -1,6 +1,10 @@
-# ci.yml — osm2 GitHub Actions CI pipeline
+# ci.yml - osm2 GitHub Actions CI pipeline
 # Triggers: push to any branch, pull_request to main
 # Release: on tag push matching v*.*.*
+#
+# Tool versions are declared in .mise.toml at the repo root.
+# jdx/mise-action reads that file and installs java, maven, and node
+# at the exact pinned versions - no JAVA_VERSION env var needed here.
 
 name: CI
 
@@ -16,14 +20,10 @@ permissions:
   pull-requests: read
   security-events: write
 
-env:
-  JAVA_VERSION: "21"
-  MAVEN_OPTS: "-Xmx2g -XX:+TieredCompilation"
-
 jobs:
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   # JOB: Build and verify
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   build:
     name: Build & Verify
     runs-on: ubuntu-latest
@@ -34,12 +34,10 @@ jobs:
         with:
           fetch-depth: 0  # Full history for SonarCloud blame data
 
-      - name: Set up Java 21
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v2
         with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-          cache: maven
+          cache: true
 
       - name: Cache Maven repository
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
@@ -67,9 +65,9 @@ jobs:
           path: "**/target/site/jacoco/"
           retention-days: 7
 
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   # JOB: SonarCloud analysis
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   sonar:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
@@ -82,12 +80,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Java 21
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v2
         with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-          cache: maven
+          cache: true
+
+      - name: Cache Maven repository
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
       - name: SonarCloud Scan
         run: |
@@ -99,9 +103,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   # JOB: OWASP Dependency Check
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   owasp:
     name: OWASP Dependency Check
     runs-on: ubuntu-latest
@@ -112,12 +116,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
 
-      - name: Set up Java 21
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v2
         with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-          cache: maven
+          cache: true
+
+      - name: Cache Maven repository
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
       - name: OWASP Dependency Check (security-scan profile)
         run: mvn --batch-mode --no-transfer-progress verify -P security-scan -DskipTests
@@ -132,9 +142,9 @@ jobs:
           path: "**/target/dependency-check-report.*"
           retention-days: 30
 
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   # JOB: Dependency Review (PRs only)
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
@@ -149,9 +159,9 @@ jobs:
         with:
           fail-on-severity: high
 
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   # JOB: Release (on tag)
-  # ─────────────────────────────────────────────
+  # -------------------------------------------------
   release:
     name: Release & Docker Build
     runs-on: ubuntu-latest
@@ -165,12 +175,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
 
-      - name: Set up Java 21
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v2
         with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-          cache: maven
+          cache: true
+
+      - name: Cache Maven repository
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
       - name: Extract version from tag
         id: version
