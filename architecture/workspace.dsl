@@ -13,6 +13,14 @@ workspace "osm2" "One Stop Moms 2 — Danish VAT One Stop Shop system implementi
             // --- Core Backend Services ---
             schemeService = container "osm2-scheme-service" "Classifies taxable persons into Non-EU, EU, or Import OSS schemes per ML 66-66u. Uses Drools rules engine for statutory eligibility logic validated against Catala oracle." "Java 21 / Spring Boot 3.5 / Drools 9" "Service" {
                 tags "port:8081"
+
+                // --- Components (OSS-01: scheme classification) ---
+                classifyController = component "SchemeClassificationController" "Exposes POST /api/v1/schemes/classify. Accepts SchemeClassificationRequest (supply type, enrolled schemes) and returns SchemeClassificationResult (status, assigned scheme)." "Spring MVC @RestController"
+                classificationService = component "SchemeClassificationService" "Stateless classify() entry point. Pre-validates V-01 (supply type not null) and V-02 (no duplicate enrolled schemes), then delegates to a per-request Drools KieSession." "Spring @Service"
+                droolsRulesEngine = component "Drools Rules Engine" "KieContainer loaded from scheme-classification.drl at startup. Hosts 20 rules implementing FR-01 through FR-08 (ML §§ 66-66u eligibility logic). KieSession created, fired, and disposed per classify() call." "Drools 9 / DRL"
+
+                classifyController -> classificationService "Delegates classification to" "Java method call"
+                classificationService -> droolsRulesEngine "Creates KieSession, inserts facts, fires all rules" "Drools KIE API"
             }
 
             registrationService = container "osm2-registration-service" "Manages OSS registration and deregistration lifecycle for all three schemes. PII silo: holds taxable person identity data (VAT numbers, addresses, contact details). All other services reference via registrant_id UUID only." "Java 21 / Spring Boot 3.5" "Service" {

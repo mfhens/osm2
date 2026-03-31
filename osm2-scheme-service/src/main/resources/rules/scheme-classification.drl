@@ -1,0 +1,568 @@
+/**
+ * scheme-classification.drl
+ *
+ * Drools rule file for OSS scheme eligibility classification.
+ *
+ * Petition: OSS-01 — Juridisk grundlag, skemavurdering og definitioner
+ * Legal basis: ML §§ 66, 66a, 66d, 66m / MSD artikler 358, 358a, 369a, 369l
+ * Rule hierarchy source: DA16.3.1.3
+ *
+ * Rule ordering by salience (highest fires first):
+ *   900  — FR-06 Import exclusion: excisable goods
+ *   800  — FR-06 Import exclusion: value > €150
+ *   600  — Enrolled-scheme shortcut (already-enrolled person, skip eligibility)
+ *   500  — FR-01 Scheme eligibility (Non-EU, EU, Import)
+ *   380  — FR-03/04/05 Identification MS — priority a (seat / intermediary)
+ *   360  — FR-04/05 Identification MS — priority a (single FE / EU seat)
+ *   340  — FR-04/05 Identification MS — priority b (chosen FE / free choice)
+ *   320  — FR-04   Identification MS — priority c (shipment start country)
+ *   200  — FR-03/04/05 Consumption MS
+ *   100  — FR-07 Rule hierarchy — secondary (ML almindelige regler)
+ *    50  — FR-07 Rule hierarchy — tertiary (Opkrævningsloven)
+ */
+package dk.osm2.scheme.rules;
+
+import dk.osm2.scheme.dto.SchemeClassificationRequest;
+import dk.osm2.scheme.dto.SchemeClassificationRequest.SupplyType;
+import dk.osm2.scheme.dto.SchemeClassificationRequest.EnrolledScheme;
+import dk.osm2.scheme.service.SchemeClassificationService.ClassificationResult;
+import java.math.BigDecimal;
+
+
+// ============================================================================
+// FR-06 IMPORT EXCLUSIONS (salience 900 / 800)
+// Must fire before any eligibility or enrollment rule so that already-excluded
+// deliveries are rejected even when supplyType is set.
+// ============================================================================
+
+/**
+ * FR-06 — Excisable goods are excluded from the Import scheme regardless of value.
+ * ML § 66m / MSD art. 369l
+ * AC-09
+ */
+rule "FR-06-import-excisable"
+    salience 900
+    when
+        $req : SchemeClassificationRequest(
+                    supplyType == SupplyType.IMPORT_GOODS,
+                    excisable == true)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status = "INELIGIBLE";
+        $res.scheme  = null;
+        $res.message = "Ikke berettiget til Importordning — punktafgiftspligtige varer er undtaget";
+        $res.legalBasis.add("ML § 66m / MSD artikel 369l");
+        update($res);
+end
+
+/**
+ * FR-06 — Shipment value > €150 is excluded from the Import scheme.
+ * ML § 66m / MSD art. 369l
+ * AC-08 (exclusive upper bound)
+ */
+rule "FR-06-import-value-exceeded"
+    salience 800
+    when
+        $req : SchemeClassificationRequest(
+                    supplyType == SupplyType.IMPORT_GOODS,
+                    excisable != true,
+                    shipmentValue != null,
+                    shipmentValue.compareTo(new BigDecimal("150")) > 0)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status  = "INELIGIBLE";
+        $res.message = "Ikke berettiget til Importordning — forsendelsesværdi overstiger 150 euro";
+        $res.legalBasis.add("ML § 66m / MSD artikel 369l");
+        update($res);
+end
+
+
+// ============================================================================
+// ENROLLMENT SHORTCUT (salience 600)
+// When the caller signals that the taxable person is already enrolled in a known
+// scheme (enrolledScheme != null), accept that scheme directly without re-running
+// FR-01 eligibility rules.  FR-03/04/05 ID-MS and consumption-MS rules still fire
+// because status/scheme is now set.
+// ============================================================================
+
+/**
+ * Enrolled-scheme shortcut — bypasses FR-01 when enrolledScheme is known.
+ * Prevents redundant eligibility evaluation for ID/consumption-MS sub-queries.
+ */
+rule "Enrolled-scheme-override"
+    salience 600
+    when
+        $req : SchemeClassificationRequest(enrolledScheme != null)
+        $res : ClassificationResult(status == null)
+    then
+        $res.scheme = $req.getEnrolledScheme().name();
+        $res.status = "ELIGIBLE";
+        update($res);
+end
+
+
+// ============================================================================
+// FR-01 SCHEME ELIGIBILITY (salience 500)
+// ============================================================================
+
+/**
+ * FR-01 Non-EU scheme — no EU seat, no EU fixed establishment, services supply.
+ * ML § 66a / MSD art. 358a
+ * AC-01
+ */
+rule "FR-01-non-eu-scheme"
+    salience 500
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == false,
+                    hasFixedEstablishmentInEu   == false,
+                    supplyType == SupplyType.SERVICES)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status = "ELIGIBLE";
+        $res.scheme = "NON_EU";
+        $res.legalBasis.add("ML § 66a / MSD artikel 358a");
+        update($res);
+end
+
+/**
+ * FR-01 / AC-02 — Non-EU seat but has EU fixed establishment → EU scheme (not Non-EU).
+ * ML § 66d / MSD art. 369a
+ */
+rule "FR-01-non-eu-via-eu-fe"
+    salience 500
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == false,
+                    hasFixedEstablishmentInEu   == true,
+                    supplyType == SupplyType.SERVICES)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status = "ELIGIBLE";
+        $res.scheme = "EU";
+        $res.legalBasis.add("ML § 66d / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-01 EU scheme — EU seat, services supply, consumption MS ≠ seat country.
+ * ML § 66d / MSD art. 369a
+ * AC-03
+ */
+rule "FR-01-eu-scheme-services"
+    salience 500
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == true,
+                    supplyType == SupplyType.SERVICES,
+                    consumptionMemberState != null,
+                    consumptionMemberState != "OTHER",
+                    seatOfEconomicActivityCountry != null,
+                    consumptionMemberState != seatOfEconomicActivityCountry)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status = "ELIGIBLE";
+        $res.scheme = "EU";
+        $res.legalBasis.add("ML § 66d / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-01 EU scheme — EU seat, services supply, consumption MS = "OTHER" (generic EU-wide).
+ * ML § 66d / MSD art. 369a
+ */
+rule "FR-01-eu-scheme-services-other-country"
+    salience 499
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == true,
+                    supplyType == SupplyType.SERVICES,
+                    consumptionMemberState == "OTHER")
+        $res : ClassificationResult(status == null)
+    then
+        $res.status = "ELIGIBLE";
+        $res.scheme = "EU";
+        $res.legalBasis.add("ML § 66d / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-01 / AC-04 — EU seat, services, but supplier and consumer are in the same member state.
+ * No OSS scheme applies — standard VAT rules govern.
+ * ML § 66d / MSD art. 369a (exclusion)
+ */
+rule "FR-01-eu-scheme-same-country"
+    salience 500
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == true,
+                    supplyType == SupplyType.SERVICES,
+                    consumptionMemberState != null,
+                    consumptionMemberState != "OTHER",
+                    seatOfEconomicActivityCountry != null,
+                    consumptionMemberState == seatOfEconomicActivityCountry)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status  = "NO_OSS_SCHEME";
+        $res.message = "Ingen OSS-særordning — standard momsregler finder anvendelse";
+        update($res);
+end
+
+/**
+ * FR-01 EU scheme — EU seat, intra-EU distance sales of goods.
+ * ML § 66d / MSD art. 369a
+ * AC-05
+ */
+rule "FR-01-eu-scheme-distance-sales"
+    salience 500
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == true,
+                    supplyType == SupplyType.DISTANCE_SALES_INTRA_EU)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status = "ELIGIBLE";
+        $res.scheme = "EU";
+        $res.legalBasis.add("ML § 66d / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-01 EU scheme — goods via electronic interface (ML § 4c, stk. 2 / MSD art. 14a).
+ * The electronic interface is deemed the supplier regardless of EU establishment.
+ * ML § 66d / MSD art. 369a
+ * AC-06
+ */
+rule "FR-01-eu-scheme-electronic-interface"
+    salience 500
+    when
+        $req : SchemeClassificationRequest(
+                    viaElectronicInterface == true,
+                    supplyType == SupplyType.DISTANCE_SALES_INTRA_EU)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status = "ELIGIBLE";
+        $res.scheme = "EU";
+        $res.legalBasis.add("ML § 66d / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-01 Import scheme — goods from outside EU, not excisable, value ≤ €150.
+ * ML § 66m / MSD art. 369l
+ * AC-07, AC-08 (inclusive boundary)
+ */
+rule "FR-01-import-scheme"
+    salience 500
+    when
+        $req : SchemeClassificationRequest(
+                    supplyType == SupplyType.IMPORT_GOODS,
+                    excisable != true,
+                    shipmentValue != null,
+                    shipmentValue.compareTo(new BigDecimal("150")) <= 0)
+        $res : ClassificationResult(status == null)
+    then
+        $res.status = "ELIGIBLE";
+        $res.scheme = "IMPORT";
+        $res.legalBasis.add("ML § 66m / MSD artikel 369l");
+        update($res);
+end
+
+
+// ============================================================================
+// FR-03 IDENTIFICATION MS — Non-EU scheme (salience 400)
+// Free choice: any EU member state.
+// ============================================================================
+
+/**
+ * FR-03 — Identification MS for Non-EU scheme is the taxable person's free choice.
+ * ML § 66a, nr. 2 / MSD art. 358a
+ * AC-10
+ */
+rule "FR-03-identification-ms-free-choice"
+    salience 400
+    when
+        $req : SchemeClassificationRequest(selectedIdentificationMemberState != null)
+        $res : ClassificationResult(scheme == "NON_EU")
+    then
+        $res.identificationMemberState = $req.getSelectedIdentificationMemberState();
+        $res.legalBasis.add("ML § 66a, nr. 2 / MSD artikel 358a");
+        update($res);
+end
+
+
+// ============================================================================
+// FR-04 IDENTIFICATION MS — EU scheme (salience 380 / 360 / 340 / 320)
+// Priority order: a) seat country → b) single/chosen FE → c) shipment start
+// ============================================================================
+
+/**
+ * FR-04 priority a — EU seat country is the identification MS.
+ * ML § 66d, nr. 2, litra a / MSD art. 369a
+ * AC-11
+ */
+rule "FR-04-id-ms-seat-country"
+    salience 380
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == true,
+                    seatOfEconomicActivityCountry != null)
+        $res : ClassificationResult(scheme == "EU", identificationMemberState == null)
+    then
+        $res.identificationMemberState = $req.getSeatOfEconomicActivityCountry();
+        $res.legalBasis.add("ML § 66d, nr. 2, litra a / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-04 priority a — single EU fixed establishment is the identification MS (no EU seat).
+ * ML § 66d, nr. 2, litra a / MSD art. 369a
+ * AC-12
+ */
+rule "FR-04-id-ms-single-fe"
+    salience 360
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == false,
+                    hasFixedEstablishmentInEu   == true,
+                    fixedEstablishmentCountries != null,
+                    fixedEstablishmentCountries.size() == 1)
+        $res : ClassificationResult(scheme == "EU", identificationMemberState == null)
+    then
+        $res.identificationMemberState = $req.getFixedEstablishmentCountries().get(0);
+        $res.legalBasis.add("ML § 66d, nr. 2, litra a / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-04 priority b — chosen FE country when multiple fixed establishments exist.
+ * ML § 66d, nr. 2, litra b / MSD art. 369a
+ * AC-13
+ */
+rule "FR-04-id-ms-multiple-fe-chosen"
+    salience 340
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == false,
+                    fixedEstablishmentCountries != null,
+                    fixedEstablishmentCountries.size() > 1,
+                    selectedIdentificationMemberState != null)
+        $res : ClassificationResult(scheme == "EU", identificationMemberState == null)
+    then
+        $res.identificationMemberState = $req.getSelectedIdentificationMemberState();
+        $res.legalBasis.add("ML § 66d, nr. 2, litra b / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-04 priority c — shipment start country when no EU establishment exists.
+ * ML § 66d, nr. 2, litra c / MSD art. 369a
+ * AC-14
+ */
+rule "FR-04-id-ms-departure-country"
+    salience 320
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == false,
+                    hasFixedEstablishmentInEu   == false,
+                    shipmentStartCountry != null)
+        $res : ClassificationResult(scheme == "EU", identificationMemberState == null)
+    then
+        $res.identificationMemberState = $req.getShipmentStartCountry();
+        $res.legalBasis.add("ML § 66d, nr. 2, litra c / MSD artikel 369a");
+        update($res);
+end
+
+
+// ============================================================================
+// FR-05 IDENTIFICATION MS — Import scheme (salience 380 / 360 / 340)
+// Priority order: d) intermediary → c) EU seat → a) free choice
+// ============================================================================
+
+/**
+ * FR-05 priority d — intermediary country is the identification MS.
+ * ML § 66m, nr. 3, litra d / MSD art. 369l
+ * AC-17
+ */
+rule "FR-05-id-ms-intermediary"
+    salience 380
+    when
+        $req : SchemeClassificationRequest(
+                    hasIntermediary == true,
+                    intermediaryEstablishmentCountry != null)
+        $res : ClassificationResult(scheme == "IMPORT", identificationMemberState == null)
+    then
+        $res.identificationMemberState = $req.getIntermediaryEstablishmentCountry();
+        $res.legalBasis.add("ML § 66m, nr. 3, litra d / MSD artikel 369l");
+        update($res);
+end
+
+/**
+ * FR-05 priority c — EU seat country is the identification MS (no intermediary).
+ * ML § 66m, nr. 3, litra c / MSD art. 369l
+ * AC-16
+ */
+rule "FR-05-id-ms-eu-seat"
+    salience 360
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == true,
+                    seatOfEconomicActivityCountry != null)
+        $res : ClassificationResult(scheme == "IMPORT", identificationMemberState == null)
+    then
+        $res.identificationMemberState = $req.getSeatOfEconomicActivityCountry();
+        $res.legalBasis.add("ML § 66m, nr. 3, litra c / MSD artikel 369l");
+        update($res);
+end
+
+/**
+ * FR-05 priority a — free choice for non-EU person without intermediary.
+ * ML § 66m, nr. 3, litra a / MSD art. 369l
+ * AC-15
+ */
+rule "FR-05-id-ms-free-choice-import"
+    salience 340
+    when
+        $req : SchemeClassificationRequest(
+                    hasEuSeatOfEconomicActivity == false,
+                    hasFixedEstablishmentInEu   == false,
+                    hasIntermediary != true,
+                    selectedIdentificationMemberState != null)
+        $res : ClassificationResult(scheme == "IMPORT", identificationMemberState == null)
+    then
+        $res.identificationMemberState = $req.getSelectedIdentificationMemberState();
+        $res.legalBasis.add("ML § 66m, nr. 3, litra a / MSD artikel 369l");
+        update($res);
+end
+
+
+// ============================================================================
+// FR-03/04/05 CONSUMPTION MS (salience 200)
+// ============================================================================
+
+/**
+ * FR-03 — Consumption MS for Non-EU scheme is where the supply is consumed.
+ * ML § 66a, nr. 3 / MSD art. 358a
+ * AC-18
+ */
+rule "FR-03-consumption-ms"
+    salience 200
+    when
+        $req : SchemeClassificationRequest(consumptionMemberState != null)
+        $res : ClassificationResult(scheme == "NON_EU", consumptionMemberState == null)
+    then
+        $res.consumptionMemberState = $req.getConsumptionMemberState();
+        $res.legalBasis.add("ML § 66a, nr. 3 / MSD artikel 358a");
+        update($res);
+end
+
+/**
+ * FR-04 — Consumption MS for EU scheme, services supply (delivery place per ML chapter 4).
+ * ML § 66d, nr. 3, litra a / MSD art. 369a
+ * AC-19a
+ */
+rule "FR-04-consumption-ms-services"
+    salience 200
+    when
+        $req : SchemeClassificationRequest(
+                    supplyType == SupplyType.SERVICES,
+                    viaElectronicInterface != true,
+                    consumptionMemberState != null)
+        $res : ClassificationResult(scheme == "EU", consumptionMemberState == null)
+    then
+        $res.consumptionMemberState = $req.getConsumptionMemberState();
+        $res.legalBasis.add("ML § 66d, nr. 3, litra a / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-04 — Consumption MS for EU scheme, intra-EU distance sales (destination country).
+ * ML § 66d, nr. 3, litra b / MSD art. 369a
+ * AC-19b
+ */
+rule "FR-04-consumption-ms-distance-sales"
+    salience 200
+    when
+        $req : SchemeClassificationRequest(
+                    supplyType == SupplyType.DISTANCE_SALES_INTRA_EU,
+                    viaElectronicInterface != true,
+                    consumptionMemberState != null)
+        $res : ClassificationResult(scheme == "EU", consumptionMemberState == null)
+    then
+        $res.consumptionMemberState = $req.getConsumptionMemberState();
+        $res.legalBasis.add("ML § 66d, nr. 3, litra b / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-04 — Consumption MS for EU scheme, goods via electronic interface.
+ * ML § 66d, nr. 3, litra c / MSD art. 369a
+ * AC-19c
+ */
+rule "FR-04-consumption-ms-electronic-interface"
+    salience 200
+    when
+        $req : SchemeClassificationRequest(
+                    viaElectronicInterface == true,
+                    consumptionMemberState != null)
+        $res : ClassificationResult(scheme == "EU", consumptionMemberState == null)
+    then
+        $res.consumptionMemberState = $req.getConsumptionMemberState();
+        $res.legalBasis.add("ML § 66d, nr. 3, litra c / MSD artikel 369a");
+        update($res);
+end
+
+/**
+ * FR-05 — Consumption MS for Import scheme is the destination (delivery receipt) country.
+ * ML § 66m, nr. 4 / MSD art. 369l
+ * AC-19d
+ */
+rule "FR-05-consumption-ms-import"
+    salience 200
+    when
+        $req : SchemeClassificationRequest(consumptionMemberState != null)
+        $res : ClassificationResult(scheme == "IMPORT", consumptionMemberState == null)
+    then
+        $res.consumptionMemberState = $req.getConsumptionMemberState();
+        $res.legalBasis.add("ML § 66m, nr. 4 / MSD artikel 369l");
+        update($res);
+end
+
+
+// ============================================================================
+// FR-07 RULE HIERARCHY (salience 100 / 50)
+// DA16.3.1.3 — Momslovens almindelige regler (secondary) and Opkrævningsloven (tertiary)
+// ============================================================================
+
+/**
+ * FR-07 secondary — ML general rules apply when OSS-specific rules do not exhaustively govern.
+ * DA16.3.1.3 — ML almindelige regler (sekundær)
+ * AC-22
+ */
+rule "FR-07-rule-hierarchy-secondary"
+    salience 100
+    when
+        $req : SchemeClassificationRequest(queryRuleHierarchy == true, enrolledScheme != null)
+        $res : ClassificationResult()
+    then
+        $res.applicableRules.add("ML almindelige regler (sekundær)");
+        $res.legalBasis.add("DA16.3.1.3 — ML almindelige regler (sekundær)");
+        update($res);
+end
+
+/**
+ * FR-07 tertiary — Opkrævningsloven applies for non-EU persons when ML/OSS-specific rules
+ * do not govern a procedural matter.
+ * DA16.3.1.3 — Opkrævningsloven (tertiær)
+ * AC-23
+ */
+rule "FR-07-rule-hierarchy-tertiary"
+    salience 50
+    when
+        $req : SchemeClassificationRequest(queryRuleHierarchy == true, hasEuSeatOfEconomicActivity == false)
+        $res : ClassificationResult()
+    then
+        $res.applicableRules.add("Opkrævningsloven (tertiær)");
+        $res.legalBasis.add("DA16.3.1.3 — Opkrævningsloven (tertiær)");
+        update($res);
+end

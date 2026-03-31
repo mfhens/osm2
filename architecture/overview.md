@@ -45,6 +45,11 @@ See `architecture/adr/` for the full decision log.
 | ADR | Title | Status |
 |---|---|---|
 | [ADR-0001](adr/0001-architecture-principles.md) | Architecture Principles | Accepted |
+| [ADR-0031](adr/0031-statutory-codes-as-enums.md) | Statutory Codes Represented as Java Enums | Accepted |
+| [ADR-0032](adr/0032-catala-oracle-only.md) | Catala as Formal Legal Oracle (Not Runtime Dependency) | Accepted |
+| [ADR-0033](adr/0033-bitemporal-registration.md) | Bitemporal Registration | Accepted |
+| [ADR-0034](adr/0034-oces3-mtls-payment-service.md) | OCES3 mTLS for Payment Service External System Integration | Accepted |
+| [ADR-0035](adr/0035-defer-scheme-enums-to-common.md) | Defer SupplyType and EnrolledScheme Enums to osm2-common Until Shared | Accepted |
 
 > [STUB — add new rows as ADRs are created]
 

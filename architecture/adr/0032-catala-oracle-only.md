@@ -27,6 +27,12 @@ Catala (`.catala_da` files — Danish language variant) is used as a **formal or
 
 **Authorship**: Catala files are maintained by the legal-technical team (legal experts with Catala training). Drools rules are maintained by the engineering team. The two artefacts are reviewed independently and cross-validated via the oracle process.
 
+## Implementation Note (OSS-01)
+
+OSS-01 delivered the first Drools runtime implementation of the Catala-specified rules. The file `osm2-scheme-service/src/main/resources/rules/scheme-classification.drl` contains 20 rules covering **FR-01 through FR-08** — the scheme eligibility logic for ML §§ 66-66u (Non-EU, EU/Union, and Import OSS schemes). This DRL is the authoritative runtime artefact that the Catala oracle validates.
+
+The Catala oracle validation step (Catala compiler → eligibility scenario comparison) for FR-01 through FR-08 is a required gate before the scheme-service is promoted to a production release.
+
 ## Consequences
 
 **Positive**
