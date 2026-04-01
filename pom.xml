@@ -58,7 +58,6 @@
 
         <!-- Audit / immutability -->
         <immudb.version>1.0.1</immudb.version>
-        <bookkeeping.version>4.3.0</bookkeeping.version>
 
         <!-- OCES3 Certificate Parser — mTLS identity for SOAP e-government integrations -->
         <oces3-certificate-parser.version>1.0</oces3-certificate-parser.version>
@@ -197,13 +196,6 @@
                 <groupId>dk.ufst</groupId>
                 <artifactId>audit-trail-commons</artifactId>
                 <version>${audit-trail-commons.version}</version>
-            </dependency>
-
-            <!-- Double-entry bookkeeping [ADR-0018] -->
-            <dependency>
-                <groupId>com.yanimetaxas</groupId>
-                <artifactId>bookkeeping</artifactId>
-                <version>${bookkeeping.version}</version>
             </dependency>
 
             <!-- Tamper-evident ledger [ADR-0029] -->

@@ -79,10 +79,7 @@
             <artifactId>resilience4j-spring-boot3</artifactId>
         </dependency>
 
-        <!-- Double-entry bookkeeping — version-pinned here; declare as dep when code is ready [ADR-0018] -->
-        <!-- com.yanimetaxas:bookkeeping:4.3.0 is not on public Maven Central (0.1.0 is the only  -->
-        <!-- published version). Declare as a real <dependency> only after local install or once   -->
-        <!-- the artifact is available in the repository. See opendebt for usage reference.        -->
+        <!-- Double-entry bookkeeping is implemented in-house; see osm2-payment-service bookkeeping package [ADR-0018] -->
 
         <!-- Tamper-evident audit ledger [ADR-0029] -->
         <!-- grpc-netty excluded; grpc-netty-shaded bundles Netty to avoid Spring Boot version conflict -->

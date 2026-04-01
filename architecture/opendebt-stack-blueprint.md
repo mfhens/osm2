@@ -111,7 +111,7 @@ Internal endpoints follow the pattern:
 | Rules engine | Drools | 9.44.0.Final | Declarative eligibility / prioritisation rules |
 | Workflow engine | Flowable | 7.0.1 | BPMN process definitions for case workflows |
 | EDIFACT parsing | Smooks | 2.0.0 | CREMUL/DEBMUL payment notification messages |
-| Double-entry bookkeeping | yanimetaxas/bookkeeping | 4.3.0 | Every financial event → debit+credit journal entry |
+| Double-entry bookkeeping | Custom implementation | — | Every financial event → debit+credit journal entry |
 | Formal law encoding | Catala | (external compiler) | Legal calculation specifications; oracle layer only |
 
 Catala `.catala_da` files live in `src/main/catala/`. They are compiled to a test oracle

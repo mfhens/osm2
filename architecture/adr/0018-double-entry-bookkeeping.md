@@ -10,7 +10,7 @@ EU OSS payment processing requires distributable payment accounting across multi
 
 ## Decision
 
-`osm2-payment-service` uses double-entry bookkeeping via the `io.github.yanimetaxas:bookkeeping:4.3.0` library.
+`osm2-payment-service` implements double-entry bookkeeping in-house within the `bookkeeping` package.
 
 Every payment event is recorded as a balanced journal entry — the sum of debits equals the sum of credits for every transaction. The key journal entry types are:
 
@@ -34,6 +34,6 @@ The bookkeeping ledger is stored in the payment-service PostgreSQL schema (ADR-0
 - FX conversion is explicit and auditable: the rate used for each conversion is recorded at the time of the transaction.
 
 **Negative**
-- The bookkeeping library must be kept compatible with Java 21 and Spring Boot 3.x. The library is not under Skatteforvaltningen's control; version upgrades require compatibility verification.
+- The custom bookkeeping implementation must be maintained by the team. Changes to the double-entry model require careful review to preserve the debit=credit invariant.
 - Development and operations teams must understand double-entry accounting concepts to maintain the ledger schema and diagnose reconciliation issues.
 - Journal entry volume is higher than a simple ledger: a single OSS payment touching 10 member states generates at minimum 21 journal entries (1 receipt + 10 distributions × 2 sides each).
