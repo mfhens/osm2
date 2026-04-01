@@ -79,18 +79,23 @@
             <artifactId>resilience4j-spring-boot3</artifactId>
         </dependency>
 
-        <!-- Double-entry bookkeeping -->
-        <dependency>
-            <groupId>io.github.yanimetaxas</groupId>
-            <artifactId>bookkeeping</artifactId>
-            <version>${bookkeeping.version}</version>
-        </dependency>
+        <!-- Double-entry bookkeeping — version-pinned here; declare as dep when code is ready [ADR-0018] -->
+        <!-- com.yanimetaxas:bookkeeping:4.3.0 is not on public Maven Central (0.1.0 is the only  -->
+        <!-- published version). Declare as a real <dependency> only after local install or once   -->
+        <!-- the artifact is available in the repository. See opendebt for usage reference.        -->
 
-        <!-- Immutable audit ledger -->
+        <!-- Tamper-evident audit ledger [ADR-0029] -->
+        <!-- grpc-netty excluded; grpc-netty-shaded bundles Netty to avoid Spring Boot version conflict -->
+        <!-- immudb4j upgraded from 0.9.7 to 1.0.1 (confirmed on Maven Central) -->
         <dependency>
             <groupId>io.codenotary</groupId>
             <artifactId>immudb4j</artifactId>
-            <version>${immudb.version}</version>
+        </dependency>
+        <!-- grpc-netty-shaded upgraded to 1.68.1 to fix CVE-2023-44487 (HTTP/2 Rapid Reset, CVSS 7.5) -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>1.68.1</version>
         </dependency>
 
         <!-- ECB rate / CMS API HTTP client -->
@@ -180,6 +185,50 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <!-- Pin transitive deps from immudb4j gRPC stack to CVE-safe versions.          -->
+    <!-- gRPC upgraded from 1.44.1 to 1.68.1: fixes CVE-2023-44487 (CVSS 7.5)       -->
+    <!-- protobuf-java 3.25.5: fixes CVE-2022-3171, CVE-2022-3509, CVE-2024-7254     -->
+    <!-- guava 33.4.0-jre: fixes CVE-2023-2976 (temp file world-readable, CVSS 7.1)  -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>1.68.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>1.68.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
+                <version>1.68.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>3.25.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>33.4.0-jre</version>
+            </dependency>
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>3.43.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>2.41.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>

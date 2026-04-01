@@ -57,7 +57,7 @@
         <okhttp.version>4.12.0</okhttp.version>
 
         <!-- Audit / immutability -->
-        <immudb.version>0.9.7</immudb.version>
+        <immudb.version>1.0.1</immudb.version>
         <bookkeeping.version>4.3.0</bookkeeping.version>
 
         <!-- OCES3 Certificate Parser — mTLS identity for SOAP e-government integrations -->
@@ -197,6 +197,28 @@
                 <groupId>dk.ufst</groupId>
                 <artifactId>audit-trail-commons</artifactId>
                 <version>${audit-trail-commons.version}</version>
+            </dependency>
+
+            <!-- Double-entry bookkeeping [ADR-0018] -->
+            <dependency>
+                <groupId>com.yanimetaxas</groupId>
+                <artifactId>bookkeeping</artifactId>
+                <version>${bookkeeping.version}</version>
+            </dependency>
+
+            <!-- Tamper-evident ledger [ADR-0029] -->
+            <!-- grpc-netty excluded: grpc-netty-shaded bundles Netty internally to avoid -->
+            <!-- Spring Boot Netty version conflict. See osm2-payment-service/pom.xml.     -->
+            <dependency>
+                <groupId>io.codenotary</groupId>
+                <artifactId>immudb4j</artifactId>
+                <version>${immudb.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.grpc</groupId>
+                        <artifactId>grpc-netty</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
