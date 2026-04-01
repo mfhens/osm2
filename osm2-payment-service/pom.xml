@@ -79,7 +79,12 @@
             <artifactId>resilience4j-spring-boot3</artifactId>
         </dependency>
 
-        <!-- Double-entry bookkeeping is implemented in-house; see osm2-payment-service bookkeeping package [ADR-0018] -->
+        <!-- Double-entry bookkeeping — pure domain library, no Spring/JPA [ADR-0018] -->
+        <!-- JPA adapters and Kontoplan SPI impl live in dk.osm2.payment.bookkeeping -->
+        <dependency>
+            <groupId>dk.ufst</groupId>
+            <artifactId>ufst-bookkeeping-core</artifactId>
+        </dependency>
 
         <!-- Tamper-evident audit ledger [ADR-0029] -->
         <!-- grpc-netty excluded; grpc-netty-shaded bundles Netty to avoid Spring Boot version conflict -->
