@@ -24,7 +24,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,circuitbreakers
   metrics:
     export:
       prometheus:
@@ -56,3 +56,19 @@ osm2:
       base-url: ${PAYMENT_SERVICE_URL:http://localhost:8084}
     records-service:
       base-url: ${RECORDS_SERVICE_URL:http://localhost:8085}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      registrationService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+  retry:
+    instances:
+      registrationService:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2

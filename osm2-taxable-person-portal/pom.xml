@@ -77,6 +77,12 @@
             <artifactId>loki-logback-appender</artifactId>
         </dependency>
 
+        <!-- Resilience4j — circuit breakers and retry [ADR-0026] -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+        </dependency>
+
         <!-- Backend API HTTP client -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>

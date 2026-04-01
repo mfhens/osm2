@@ -36,7 +36,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *   R-03  No cross-service package imports   [ADR-0002, ADR-0007]
  *   R-04  No message broker imports          [ADR-0019]
  *   R-05  Layered architecture direction     [ADR-0002]
- *   R-06  Resilience4j on client methods     [ADR-0026]  ← CURRENTLY FAILING
+ *   R-06  Resilience4j on client methods     [ADR-0026]
  *   R-07  API URL prefix convention          [ADR-0004]
  *   R-08a Domain must not depend on Spring Web  [ADR-0001]
  *   R-08b Domain must not carry Spring stereotypes [ADR-0001]
@@ -156,10 +156,11 @@ public final class SharedArchitectureRules {
     // -------------------------------------------------------------------------
     // R-06 — Resilience4j on HTTP Client Methods [ADR-0026]
     //
-    // !! THIS RULE CURRENTLY FAILS !!
-    // Portal client classes (RegistrationServiceClient, SchemeServiceClient) lack
-    // @CircuitBreaker/@Retry/@TimeLimiter. Add this as @Disabled in portal tests
-    // and enable it once ADR-0026 compliance is implemented.
+    // Every public method on a class in the `.client` package must carry at
+    // least one of @CircuitBreaker, @Retry, or @TimeLimiter.
+    //
+    // Record types (BFF-local DTOs co-located in the client package) are excluded —
+    // their accessor methods are not HTTP calls and must not carry resilience annotations.
     // -------------------------------------------------------------------------
 
     public static final ArchRule CLIENT_METHODS_MUST_HAVE_RESILIENCE =
@@ -167,9 +168,11 @@ public final class SharedArchitectureRules {
                     .that().arePublic()
                     .and().areDeclaredInClassesThat().resideInAPackage("dk.osm2..client..")
                     .and().areDeclaredInClassesThat().areNotInterfaces()
+                    .and().areDeclaredInClassesThat().areNotRecords()
                     .should(haveResilience4jAnnotation())
                     .as("[R-06] All public .client methods must have @CircuitBreaker/@Retry/@TimeLimiter"
-                            + " [ADR-0026]");
+                            + " [ADR-0026]")
+                    .allowEmptyShould(true);
 
     private static ArchCondition<JavaMethod> haveResilience4jAnnotation() {
         return new ArchCondition<>("be annotated with @CircuitBreaker, @Retry, or @TimeLimiter") {

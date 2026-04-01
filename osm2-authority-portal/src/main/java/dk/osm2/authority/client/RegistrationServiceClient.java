@@ -3,13 +3,14 @@ package dk.osm2.authority.client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.osm2.authority.exception.ServiceUnavailableException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -23,6 +24,10 @@ import java.util.UUID;
  * <p>All downstream calls use {@code application/json}. On non-2xx responses or I/O
  * failures a {@link ServiceUnavailableException} is thrown so the
  * {@link dk.osm2.authority.web.GlobalExceptionHandler} can render the generic error page.
+ *
+ * <p>Read operations (GET) are protected by a circuit breaker and a retry per ADR-0026.
+ * Write operations (approve/reject) carry a circuit breaker only — no retry to avoid
+ * duplicate mutations.
  */
 @Component
 public class RegistrationServiceClient {
@@ -84,7 +89,11 @@ public class RegistrationServiceClient {
     /**
      * Returns registrations whose status is {@code PENDING_VAT_NUMBER} —
      * i.e. awaiting a caseworker assignment decision.
+     *
+     * <p>Idempotent — protected by circuit breaker and retry with exponential backoff.
      */
+    @CircuitBreaker(name = "registrationService", fallbackMethod = "listPendingRegistrationsFallback")
+    @Retry(name = "registrationService")
     public List<RegistrationItem> listPendingRegistrations() {
         Request request = new Request.Builder()
                 .url(baseUrl + "/api/v1/registrations?status=PENDING_VAT_NUMBER")
@@ -95,7 +104,7 @@ public class RegistrationServiceClient {
             assertSuccess(response, "listPendingRegistrations");
             return objectMapper.readValue(
                     response.body().string(),
-                    new TypeReference<List<RegistrationItem>>() {});
+                    new com.fasterxml.jackson.core.type.TypeReference<List<RegistrationItem>>() {});
         } catch (IOException e) {
             throw new ServiceUnavailableException("registration-service unavailable: " + e.getMessage(), e);
         }
@@ -103,7 +112,11 @@ public class RegistrationServiceClient {
 
     /**
      * Fetches the full detail of a single registration.
+     *
+     * <p>Idempotent — protected by circuit breaker and retry with exponential backoff.
      */
+    @CircuitBreaker(name = "registrationService", fallbackMethod = "getRegistrationFallback")
+    @Retry(name = "registrationService")
     public RegistrationDetail getRegistration(UUID id) {
         Request request = new Request.Builder()
                 .url(baseUrl + "/api/v1/registrations/" + id)
@@ -121,9 +134,12 @@ public class RegistrationServiceClient {
     /**
      * Approves a pending registration by assigning a VAT number.
      *
+     * <p>Non-idempotent — protected by circuit breaker only (no retry) to avoid duplicate approvals.
+     *
      * <p>In demo mode, if {@code vatNumber} is blank, a placeholder is generated
      * to avoid a validation error against the downstream service.
      */
+    @CircuitBreaker(name = "registrationService", fallbackMethod = "approveRegistrationFallback")
     public void approveRegistration(UUID id, String vatNumber) {
         String effectiveVatNumber = (vatNumber == null || vatNumber.isBlank())
                 ? generatePlaceholderVatNumber()
@@ -135,10 +151,34 @@ public class RegistrationServiceClient {
 
     /**
      * Rejects a pending registration with a caseworker-supplied reason.
+     *
+     * <p>Non-idempotent — protected by circuit breaker only (no retry) to avoid duplicate rejections.
      */
+    @CircuitBreaker(name = "registrationService", fallbackMethod = "rejectRegistrationFallback")
     public void rejectRegistration(UUID id, String reason) {
         RejectionRequest body = new RejectionRequest(reason);
         postJson("/api/v1/registrations/" + id + "/reject", body, "rejectRegistration(" + id + ")");
+    }
+
+    // -------------------------------------------------------------------------
+    // Fallback methods [ADR-0026]
+    // Called by Resilience4j when the circuit is open or all retries are exhausted.
+    // -------------------------------------------------------------------------
+
+    private List<RegistrationItem> listPendingRegistrationsFallback(Throwable t) {
+        throw new ServiceUnavailableException("registration-service unavailable (circuit open): " + t.getMessage(), t);
+    }
+
+    private RegistrationDetail getRegistrationFallback(UUID id, Throwable t) {
+        throw new ServiceUnavailableException("registration-service unavailable (circuit open): " + t.getMessage(), t);
+    }
+
+    private void approveRegistrationFallback(UUID id, String vatNumber, Throwable t) {
+        throw new ServiceUnavailableException("registration-service unavailable (circuit open): " + t.getMessage(), t);
+    }
+
+    private void rejectRegistrationFallback(UUID id, String reason, Throwable t) {
+        throw new ServiceUnavailableException("registration-service unavailable (circuit open): " + t.getMessage(), t);
     }
 
     // -------------------------------------------------------------------------
@@ -175,3 +215,4 @@ public class RegistrationServiceClient {
         return "EU" + String.format("%09d", System.currentTimeMillis() % 1_000_000_000L);
     }
 }
+

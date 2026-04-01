@@ -3,6 +3,8 @@ package dk.osm2.taxableperson.client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.osm2.taxableperson.exception.ServiceUnavailableException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +28,10 @@ import org.springframework.stereotype.Component;
  * <p>Forwards the OAuth2 bearer token obtained from the current security context to the
  * registration-service so that downstream authorization checks use the same identity.
  * In demo mode no token is present and the Authorization header is omitted.
+ *
+ * <p>All public methods are protected with Resilience4j circuit breakers per ADR-0026.
+ * Idempotent reads additionally carry a {@code @Retry} annotation. Non-idempotent
+ * mutations (POST/PUT) carry a circuit breaker only to avoid duplicate writes.
  */
 @Slf4j
 @Component
@@ -52,10 +58,13 @@ public class RegistrationServiceClient {
   /**
    * Submit a new registration to the registration-service.
    *
+   * <p>Non-idempotent — protected by circuit breaker only (no retry) to prevent duplicate writes.
+   *
    * @param request the registration payload built from the wizard session
    * @return the created registration resource
    * @throws ServiceUnavailableException on network error or non-2xx response
    */
+  @CircuitBreaker(name = "registrationService", fallbackMethod = "submitRegistrationFallback")
   public RegistrationResponse submitRegistration(RegistrationRequest request) {
     try {
       String json = objectMapper.writeValueAsString(request);
@@ -83,10 +92,14 @@ public class RegistrationServiceClient {
   /**
    * Retrieve a single registration by its ID.
    *
+   * <p>Idempotent — protected by circuit breaker and retry with exponential backoff.
+   *
    * @param id registration UUID
    * @return the registration resource
    * @throws ServiceUnavailableException on network error or non-2xx response
    */
+  @CircuitBreaker(name = "registrationService", fallbackMethod = "getRegistrationFallback")
+  @Retry(name = "registrationService")
   public RegistrationResponse getRegistration(UUID id) {
     try {
       Request httpRequest =
@@ -113,10 +126,14 @@ public class RegistrationServiceClient {
   /**
    * List all registrations belonging to the given registrant.
    *
+   * <p>Idempotent — protected by circuit breaker and retry with exponential backoff.
+   *
    * @param registrantId the registrant's UUID (sourced from OIDC {@code sub} claim)
    * @return list of registration resources (may be empty)
    * @throws ServiceUnavailableException on network error or non-2xx response
    */
+  @CircuitBreaker(name = "registrationService", fallbackMethod = "listMyRegistrationsFallback")
+  @Retry(name = "registrationService")
   public List<RegistrationResponse> listMyRegistrations(UUID registrantId) {
     try {
       Request httpRequest =
@@ -145,6 +162,26 @@ public class RegistrationServiceClient {
   }
 
   // ---------------------------------------------------------------------------
+  // Fallback methods [ADR-0026]
+  // Called by Resilience4j when the circuit is open or all retries are exhausted.
+  // ---------------------------------------------------------------------------
+
+  private RegistrationResponse submitRegistrationFallback(RegistrationRequest request, Throwable t) {
+    log.error("registration-service circuit open for submitRegistration: {}", t.getMessage());
+    throw new ServiceUnavailableException("registration-service unavailable (circuit open)", t);
+  }
+
+  private RegistrationResponse getRegistrationFallback(UUID id, Throwable t) {
+    log.error("registration-service circuit open for getRegistration({}): {}", id, t.getMessage());
+    throw new ServiceUnavailableException("registration-service unavailable (circuit open)", t);
+  }
+
+  private List<RegistrationResponse> listMyRegistrationsFallback(UUID registrantId, Throwable t) {
+    log.error("registration-service circuit open for listMyRegistrations({}): {}", registrantId, t.getMessage());
+    throw new ServiceUnavailableException("registration-service unavailable (circuit open)", t);
+  }
+
+  // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------
 
@@ -167,3 +204,4 @@ public class RegistrationServiceClient {
     return "";
   }
 }
+
