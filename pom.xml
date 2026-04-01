@@ -81,6 +81,17 @@
         <maven-enforcer.version>3.5.0</maven-enforcer.version>
     </properties>
 
+    <!-- Ensures junit-platform-launcher on every test classpath matches the
+         junit-jupiter-engine version managed by Spring Boot, preventing the
+         "OutputDirectoryProvider not available" error with maven-surefire 3.5.x. -->
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <dependencyManagement>
         <dependencies>
             <!-- =========================================================
@@ -151,6 +162,11 @@
                 <groupId>io.github.resilience4j</groupId>
                 <artifactId>resilience4j-reactor</artifactId>
                 <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit</artifactId>
+                <version>${archunit.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.tngtech.archunit</groupId>
@@ -231,7 +247,7 @@
                         <dependency>
                             <groupId>org.junit.platform</groupId>
                             <artifactId>junit-platform-launcher</artifactId>
-                            <version>1.11.4</version>
+                            <version>1.12.2</version>
                         </dependency>
                     </dependencies>
                 </plugin>

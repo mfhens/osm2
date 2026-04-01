@@ -50,6 +50,14 @@
         </dependency>
 
         <!-- Testing -->
+        <!-- ArchUnit rule definitions are treated as first-class architectural artifacts.
+             Only the core library (no JUnit integration) is needed here — service modules
+             declare archunit-junit5 in their own test scope to avoid junit-platform version
+             misalignment with spring-boot-starter-test. -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
