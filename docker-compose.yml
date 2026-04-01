@@ -4,7 +4,7 @@
 # Note: For observability stack, use docker-compose.observability.yml
 # Note: Images are tagged with Git SHA — set IMAGE_TAG env var or default to 'dev'
 
-version: "3.9"
+
 
 x-osm2-common-env: &osm2-common-env
   KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/osm2

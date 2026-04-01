@@ -2,8 +2,6 @@
 # Services: OTel Collector, Tempo, Loki, Prometheus, Grafana, Promtail
 # Usage: docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
-version: "3.9"
-
 services:
 
   otel-collector:
@@ -90,8 +88,3 @@ volumes:
   loki-data:
   prometheus-data:
   grafana-data:
-
-networks:
-  default:
-    name: osm2-network
-    external: true
