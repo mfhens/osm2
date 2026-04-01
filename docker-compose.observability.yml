@@ -48,6 +48,8 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-lifecycle"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Linux compat (no-op on macOS/Windows)
     volumes:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
@@ -79,7 +81,7 @@ services:
     command: ["-config.file=/etc/promtail/config.yml"]
     volumes:
       - ./config/promtail/config.yml:/etc/promtail/config.yml:ro
-      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - loki
 

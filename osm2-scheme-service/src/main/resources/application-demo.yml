@@ -7,3 +7,8 @@ spring:
 logging:
   level:
     dk.osm2: DEBUG
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0  # 100% trace sampling in demo

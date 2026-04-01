@@ -86,3 +86,7 @@ docs/site/
 
 # === Playwright CLI ===
 .playwright-cli/
+
+# === Demo script runtime artifacts ===
+.demo-pids/
+.demo-logs/

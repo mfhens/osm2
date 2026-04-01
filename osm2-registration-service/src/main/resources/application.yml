@@ -42,6 +42,12 @@ management:
     export:
       prometheus:
         enabled: true
+  tracing:
+    sampling:
+      probability: 0.1   # override in application-demo.yml
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
 
 logging:
   structured:
@@ -51,14 +57,7 @@ logging:
     root: INFO
     dk.osm2: DEBUG
 
-otel:
-  exporter:
-    otlp:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
-  service:
-    name: ${spring.application.name}
 
-opendebt:
   audit:
     cls:
       enabled: false   # Set to true and configure endpoint in production via env/configmap

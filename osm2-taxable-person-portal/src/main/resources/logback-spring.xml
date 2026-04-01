@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Read spring.application.name so Loki labels are correct per service -->
+    <springProperty scope="context" name="APP_NAME"
+                    source="spring.application.name"
+                    defaultValue="osm2-service"/>
+
+    <!-- ============================================================
+         Console appender — Logstash JSON (always active)
+         Injects traceId/spanId from Micrometer MDC so log lines
+         are correlated with Tempo traces.
+         ============================================================ -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+        </encoder>
+    </appender>
+
+    <!-- ============================================================
+         Loki push appender — active in demo and docker profiles.
+         Pushes directly to Loki over HTTP; no Promtail required
+         for local demo runs.  Docker runs use Promtail + Docker SD
+         as a second ingest path (redundant but harmless).
+         LOKI_PUSH_URL system property / env var defaults to localhost.
+         ============================================================ -->
+    <springProfile name="demo,docker">
+        <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+            <http>
+                <url>${LOKI_PUSH_URL:-http://localhost:3100}/loki/api/v1/push</url>
+            </http>
+            <format>
+                <label>
+                    <pattern>app=${APP_NAME},host=${HOSTNAME:-localhost}</pattern>
+                </label>
+                <message>
+                    <pattern>%-5level [%X{traceId}/%X{spanId}] %logger{36} - %msg%n</pattern>
+                </message>
+                <sortByTime>true</sortByTime>
+            </format>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="LOKI"/>
+        </root>
+        <logger name="dk.osm2" level="DEBUG"/>
+    </springProfile>
+
+    <!-- Fallback: test / default — console only -->
+    <springProfile name="!demo,!docker">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>

@@ -51,6 +51,7 @@
 
         <!-- Observability / logging -->
         <logstash-encoder.version>8.0</logstash-encoder.version>
+        <loki4j.version>1.5.2</loki4j.version>
 
         <!-- HTTP client -->
         <okhttp.version>4.12.0</okhttp.version>
@@ -129,6 +130,12 @@
                 <groupId>net.logstash.logback</groupId>
                 <artifactId>logstash-logback-encoder</artifactId>
                 <version>${logstash-encoder.version}</version>
+            </dependency>
+            <!-- Loki log push appender (not in Spring Boot BOM) -->
+            <dependency>
+                <groupId>com.github.loki4j</groupId>
+                <artifactId>loki-logback-appender</artifactId>
+                <version>${loki4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springdoc</groupId>

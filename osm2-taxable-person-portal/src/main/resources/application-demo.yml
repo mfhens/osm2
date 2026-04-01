@@ -18,3 +18,8 @@ logging:
   level:
     dk.osm2: DEBUG
     org.springframework.security: DEBUG
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0  # 100% trace sampling in demo
