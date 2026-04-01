@@ -100,7 +100,8 @@ class TimelineReplayServiceImplTest {
     // Ref: TimelineReplayServiceImpl — events before crossingPoint are applied to initial state
     // only; no entries are re-posted for them.
     BigDecimal debtAmount = new BigDecimal("50000");
-    FinancialEvent debt = buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
+    FinancialEvent debt =
+        buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
 
     when(financialEventStore.findByDebtIdOrderByEffectiveDateAscCreatedAtAsc(DEBT_ID))
         .thenReturn(List.of(debt));
@@ -126,7 +127,8 @@ class TimelineReplayServiceImplTest {
 
   @Test
   void givenDebtRegistrationAtCrossing_whenReplayTimeline_thenInterestAccruedToToday() {
-    // Ref: TimelineReplayServiceImpl — final interest gap is computed from last event date to today.
+    // Ref: TimelineReplayServiceImpl — final interest gap is computed from last event date to
+    // today.
     // With a non-zero principal and non-zero rate, at least one interest period must be produced.
     BigDecimal debtAmount = new BigDecimal("50000");
     FinancialEvent debt = buildEvent(CROSSING_POINT, EventType.DEBT_REGISTERED, debtAmount);
@@ -147,13 +149,16 @@ class TimelineReplayServiceImplTest {
   // ---------------------------------------------------------------------------
 
   @Test
-  void givenDebtBeforeCrossingAndPaymentAtCrossing_whenReplayTimeline_thenPrincipalReducedByCoveredPortion() {
-    // Ref: TimelineReplayServiceImpl — PAYMENT_RECEIVED triggers coveragePriorityPort.allocatePayment;
+  void
+      givenDebtBeforeCrossingAndPaymentAtCrossing_whenReplayTimeline_thenPrincipalReducedByCoveredPortion() {
+    // Ref: TimelineReplayServiceImpl — PAYMENT_RECEIVED triggers
+    // coveragePriorityPort.allocatePayment;
     // state.principalBalance -= allocation.principalPortion.
     BigDecimal debtAmount = new BigDecimal("50000");
     BigDecimal paymentAmount = new BigDecimal("5000");
 
-    FinancialEvent debt = buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
+    FinancialEvent debt =
+        buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
     FinancialEvent payment = buildEvent(CROSSING_POINT, EventType.PAYMENT_RECEIVED, paymentAmount);
 
     when(financialEventStore.findByDebtIdOrderByEffectiveDateAscCreatedAtAsc(DEBT_ID))
@@ -168,8 +173,7 @@ class TimelineReplayServiceImplTest {
             .principalPortion(paymentAmount) // entire payment goes to principal
             .build();
 
-    when(coveragePriorityPort.allocatePayment(
-            eq(DEBT_ID), eq(paymentAmount), any(), any(), any()))
+    when(coveragePriorityPort.allocatePayment(eq(DEBT_ID), eq(paymentAmount), any(), any(), any()))
         .thenReturn(allocation);
 
     TimelineReplayResult result = service.replayTimeline(DEBT_ID, CROSSING_POINT, RATE, "TEST");
@@ -179,14 +183,16 @@ class TimelineReplayServiceImplTest {
   }
 
   @Test
-  void givenPaymentWithInterestPortion_whenReplayTimeline_thenAccruedInterestReducedByInterestPortion() {
+  void
+      givenPaymentWithInterestPortion_whenReplayTimeline_thenAccruedInterestReducedByInterestPortion() {
     // Ref: TimelineReplayServiceImpl — state.accruedInterest -= allocation.interestPortion.
     BigDecimal debtAmount = new BigDecimal("50000");
     BigDecimal paymentAmount = new BigDecimal("1500");
     BigDecimal interestPortion = new BigDecimal("500");
     BigDecimal principalPortion = new BigDecimal("1000");
 
-    FinancialEvent debt = buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
+    FinancialEvent debt =
+        buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
     FinancialEvent payment = buildEvent(CROSSING_POINT, EventType.PAYMENT_RECEIVED, paymentAmount);
 
     when(financialEventStore.findByDebtIdOrderByEffectiveDateAscCreatedAtAsc(DEBT_ID))
@@ -221,8 +227,10 @@ class TimelineReplayServiceImplTest {
     BigDecimal debtAmount = new BigDecimal("50000");
     BigDecimal correctionDelta = new BigDecimal("-10000");
 
-    FinancialEvent debt = buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
-    FinancialEvent correction = buildEvent(CROSSING_POINT, EventType.UDLAEG_CORRECTED, correctionDelta);
+    FinancialEvent debt =
+        buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
+    FinancialEvent correction =
+        buildEvent(CROSSING_POINT, EventType.UDLAEG_CORRECTED, correctionDelta);
 
     when(financialEventStore.findByDebtIdOrderByEffectiveDateAscCreatedAtAsc(DEBT_ID))
         .thenReturn(List.of(debt, correction));
@@ -239,7 +247,8 @@ class TimelineReplayServiceImplTest {
     BigDecimal debtAmount = new BigDecimal("10000");
     BigDecimal refundAmount = new BigDecimal("5000");
 
-    FinancialEvent debt = buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
+    FinancialEvent debt =
+        buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
     FinancialEvent refund = buildEvent(CROSSING_POINT, EventType.REFUND, refundAmount);
 
     when(financialEventStore.findByDebtIdOrderByEffectiveDateAscCreatedAtAsc(DEBT_ID))
@@ -257,7 +266,8 @@ class TimelineReplayServiceImplTest {
     BigDecimal debtAmount = new BigDecimal("30000");
     BigDecimal writeOffAmount = new BigDecimal("10000");
 
-    FinancialEvent debt = buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
+    FinancialEvent debt =
+        buildEvent(CROSSING_POINT.minusDays(30), EventType.DEBT_REGISTERED, debtAmount);
     FinancialEvent writeOff = buildEvent(CROSSING_POINT, EventType.WRITE_OFF, writeOffAmount);
 
     when(financialEventStore.findByDebtIdOrderByEffectiveDateAscCreatedAtAsc(DEBT_ID))
@@ -274,12 +284,14 @@ class TimelineReplayServiceImplTest {
   // ---------------------------------------------------------------------------
 
   @Test
-  void givenEventsBeforeCrossingInReverseOrder_whenReplayTimeline_thenFinalPrincipalReflectsAllNonRecoveryEvents() {
+  void
+      givenEventsBeforeCrossingInReverseOrder_whenReplayTimeline_thenFinalPrincipalReflectsAllNonRecoveryEvents() {
     // Ref: TimelineReplayServiceImpl — allEvents.sort(EventOrderComparator.INSTANCE) is called
     // before state is built. DEBT_REGISTERED and WRITE_OFF (both handled by applyEventToState) are
     // applied regardless of their initial store order; arithmetic ensures the same final balance.
     // PAYMENT_RECEIVED is intentionally NOT applied in the pre-crossing state loop (it is a
-    // recovery event handled separately) — so only non-recovery events determine pre-crossing state.
+    // recovery event handled separately) — so only non-recovery events determine pre-crossing
+    // state.
     BigDecimal debtAmount = new BigDecimal("50000");
     BigDecimal writeOffAmount = new BigDecimal("10000");
     LocalDate debtDate = CROSSING_POINT.minusDays(60);
@@ -408,13 +420,13 @@ class TimelineReplayServiceImplTest {
             .effectiveDate(beforeCrossing) // before crossing → excluded
             .build();
 
-    when(ledgerEntryStore.findActiveEntriesByDebtId(DEBT_ID)).thenReturn(List.of(entryBeforeCrossing));
+    when(ledgerEntryStore.findActiveEntriesByDebtId(DEBT_ID))
+        .thenReturn(List.of(entryBeforeCrossing));
 
     service.replayTimeline(DEBT_ID, CROSSING_POINT, RATE, "TEST");
 
     // existsByReversalOfTransactionId and findByTransactionId must NOT be called for this entry
-    verify(ledgerEntryStore, org.mockito.Mockito.never())
-        .existsByReversalOfTransactionId(txnId);
+    verify(ledgerEntryStore, org.mockito.Mockito.never()).existsByReversalOfTransactionId(txnId);
   }
 
   @Test

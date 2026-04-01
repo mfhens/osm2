@@ -71,7 +71,8 @@ class InterestAccrualServiceImplTest {
     LocalDate to = LocalDate.of(2025, 12, 31);
 
     FinancialEvent debt = buildEvent(EventType.DEBT_REGISTERED, from, new BigDecimal("10000"));
-    FinancialEvent overCorrection = buildEvent(EventType.CORRECTION, corrDate, new BigDecimal("-15000"));
+    FinancialEvent overCorrection =
+        buildEvent(EventType.CORRECTION, corrDate, new BigDecimal("-15000"));
 
     when(financialEventStore.findPrincipalAffectingEvents(DEBT_ID))
         .thenReturn(List.of(debt, overCorrection));
@@ -168,7 +169,8 @@ class InterestAccrualServiceImplTest {
     LocalDate to = LocalDate.of(2026, 1, 1);
 
     FinancialEvent debt = buildEvent(EventType.DEBT_REGISTERED, from, new BigDecimal("50000"));
-    FinancialEvent payment = buildEvent(EventType.PAYMENT_RECEIVED, payDate, new BigDecimal("20000"));
+    FinancialEvent payment =
+        buildEvent(EventType.PAYMENT_RECEIVED, payDate, new BigDecimal("20000"));
 
     when(financialEventStore.findPrincipalAffectingEvents(DEBT_ID))
         .thenReturn(List.of(debt, payment));
@@ -256,7 +258,8 @@ class InterestAccrualServiceImplTest {
     LocalDate to = LocalDate.of(2026, 1, 1);
 
     FinancialEvent debt = buildEvent(EventType.DEBT_REGISTERED, from, new BigDecimal("10000"));
-    FinancialEvent fullPayment = buildEvent(EventType.PAYMENT_RECEIVED, to, new BigDecimal("10000"));
+    FinancialEvent fullPayment =
+        buildEvent(EventType.PAYMENT_RECEIVED, to, new BigDecimal("10000"));
 
     when(financialEventStore.findPrincipalAffectingEvents(DEBT_ID))
         .thenReturn(List.of(debt, fullPayment));
@@ -321,7 +324,8 @@ class InterestAccrualServiceImplTest {
   // ---------------------------------------------------------------------------
 
   @Test
-  void givenUdlaegCorrectionNegativeDelta_whenCalculateInterest_thenPrincipalReducedForSubsequentPeriod() {
+  void
+      givenUdlaegCorrectionNegativeDelta_whenCalculateInterest_thenPrincipalReducedForSubsequentPeriod() {
     // Ref: InterestAccrualServiceImpl — UDLAEG_CORRECTED adds delta (may be negative).
     LocalDate from = LocalDate.of(2025, 10, 1);
     LocalDate corrDate = LocalDate.of(2025, 12, 1);

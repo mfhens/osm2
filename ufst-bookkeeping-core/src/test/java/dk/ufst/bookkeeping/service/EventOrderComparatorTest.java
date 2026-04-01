@@ -149,8 +149,7 @@ class EventOrderComparatorTest {
     // INTEREST_ACCRUED on Jan 1 must sort before DEBT_REGISTERED on Feb 1.
     FinancialEvent earlyInterest =
         buildEvent(LocalDate.of(2025, 1, 1), EventType.INTEREST_ACCRUED, null);
-    FinancialEvent lateDebt =
-        buildEvent(LocalDate.of(2025, 2, 1), EventType.DEBT_REGISTERED, null);
+    FinancialEvent lateDebt = buildEvent(LocalDate.of(2025, 2, 1), EventType.DEBT_REGISTERED, null);
 
     assertThat(COMPARATOR.compare(earlyInterest, lateDebt)).isLessThan(0);
   }

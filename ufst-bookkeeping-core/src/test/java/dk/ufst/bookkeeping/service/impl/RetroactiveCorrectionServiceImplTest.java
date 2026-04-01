@@ -86,8 +86,13 @@ class RetroactiveCorrectionServiceImplTest {
 
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-            ANNUAL_RATE, "RET-001", "Udlaeg nedsat");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("50000"),
+            new BigDecimal("30000"),
+            ANNUAL_RATE,
+            "RET-001",
+            "Udlaeg nedsat");
 
     ArgumentCaptor<FinancialEvent> captor = forClass(FinancialEvent.class);
     verify(financialEventStore).save(captor.capture());
@@ -104,8 +109,13 @@ class RetroactiveCorrectionServiceImplTest {
     // Ref: RetroactiveCorrectionServiceImpl — principalDelta = correctedAmount − originalAmount
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-            ANNUAL_RATE, "RET-002", "Decreased");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("50000"),
+            new BigDecimal("30000"),
+            ANNUAL_RATE,
+            "RET-002",
+            "Decreased");
 
     assertThat(result.getPrincipalDelta()).isEqualByComparingTo("-20000");
   }
@@ -115,8 +125,13 @@ class RetroactiveCorrectionServiceImplTest {
     // Ref: RetroactiveCorrectionServiceImpl — positive delta when corrected > original
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("30000"), new BigDecimal("50000"),
-            ANNUAL_RATE, "RET-003", "Increased");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("30000"),
+            new BigDecimal("50000"),
+            ANNUAL_RATE,
+            "RET-003",
+            "Increased");
 
     assertThat(result.getPrincipalDelta()).isEqualByComparingTo("20000");
   }
@@ -126,12 +141,18 @@ class RetroactiveCorrectionServiceImplTest {
   // ---------------------------------------------------------------------------
 
   @Test
-  void givenPrincipalDecrease_whenApplyRetroactiveCorrection_thenCorrectionEntriesPostedWithCorrectAccounts() {
+  void
+      givenPrincipalDecrease_whenApplyRetroactiveCorrection_thenCorrectionEntriesPostedWithCorrectAccounts() {
     // Ref: RetroactiveCorrectionServiceImpl.postPrincipalCorrection (delta < 0):
     // DEBIT collectionRevenue, CREDIT receivables with absDelta.
     service.applyRetroactiveCorrection(
-        DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-        ANNUAL_RATE, "RET-004", "Nedsat");
+        DEBT_ID,
+        EFFECTIVE_DATE,
+        new BigDecimal("50000"),
+        new BigDecimal("30000"),
+        ANNUAL_RATE,
+        "RET-004",
+        "Nedsat");
 
     ArgumentCaptor<LedgerEntry> captor = forClass(LedgerEntry.class);
     verify(ledgerEntryStore, org.mockito.Mockito.atLeast(2)).saveSingle(captor.capture());
@@ -154,8 +175,7 @@ class RetroactiveCorrectionServiceImplTest {
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected a CREDIT correction entry"));
 
-    assertThat(debitEntry.getAccountCode())
-        .isEqualTo(TestAccountCode.COLLECTION_REVENUE.getCode());
+    assertThat(debitEntry.getAccountCode()).isEqualTo(TestAccountCode.COLLECTION_REVENUE.getCode());
     assertThat(creditEntry.getAccountCode()).isEqualTo(TestAccountCode.RECEIVABLES.getCode());
 
     // Absolute delta
@@ -164,12 +184,18 @@ class RetroactiveCorrectionServiceImplTest {
   }
 
   @Test
-  void givenPrincipalIncrease_whenApplyRetroactiveCorrection_thenCorrectionEntriesPostedWithCorrectAccounts() {
+  void
+      givenPrincipalIncrease_whenApplyRetroactiveCorrection_thenCorrectionEntriesPostedWithCorrectAccounts() {
     // Ref: RetroactiveCorrectionServiceImpl.postPrincipalCorrection (delta > 0):
     // DEBIT receivables, CREDIT collectionRevenue with delta.
     service.applyRetroactiveCorrection(
-        DEBT_ID, EFFECTIVE_DATE, new BigDecimal("30000"), new BigDecimal("50000"),
-        ANNUAL_RATE, "RET-005", "Ophojet");
+        DEBT_ID,
+        EFFECTIVE_DATE,
+        new BigDecimal("30000"),
+        new BigDecimal("50000"),
+        ANNUAL_RATE,
+        "RET-005",
+        "Ophojet");
 
     ArgumentCaptor<LedgerEntry> captor = forClass(LedgerEntry.class);
     verify(ledgerEntryStore, org.mockito.Mockito.atLeast(2)).saveSingle(captor.capture());
@@ -190,13 +216,19 @@ class RetroactiveCorrectionServiceImplTest {
   }
 
   @Test
-  void givenSameOriginalAndCorrectedAmount_whenApplyRetroactiveCorrection_thenNoPrincipalCorrectionEntries() {
+  void
+      givenSameOriginalAndCorrectedAmount_whenApplyRetroactiveCorrection_thenNoPrincipalCorrectionEntries() {
     // Ref: RetroactiveCorrectionServiceImpl.postPrincipalCorrection — delta == 0 → neither branch
     // fires → no saveSingle calls for principal correction. The storno and interest paths still run
     // (controlled here by returning empty lists).
     service.applyRetroactiveCorrection(
-        DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("50000"),
-        ANNUAL_RATE, "RET-006", "No change");
+        DEBT_ID,
+        EFFECTIVE_DATE,
+        new BigDecimal("50000"),
+        new BigDecimal("50000"),
+        ANNUAL_RATE,
+        "RET-006",
+        "No change");
 
     ArgumentCaptor<LedgerEntry> captor = forClass(LedgerEntry.class);
     // saveSingle must not be called for CORRECTION category
@@ -211,7 +243,8 @@ class RetroactiveCorrectionServiceImplTest {
   // ---------------------------------------------------------------------------
 
   @Test
-  void givenInterestEntries_whenApplyRetroactiveCorrection_thenStornoEntriesPostedWithReversedTypes() {
+  void
+      givenInterestEntries_whenApplyRetroactiveCorrection_thenStornoEntriesPostedWithReversedTypes() {
     // Ref: RetroactiveCorrectionServiceImpl.stornoInterestEntries — DEBIT ↔ CREDIT swap.
     UUID txnId = UUID.randomUUID();
     LedgerEntry debitInterest = buildInterestEntry(txnId, EntryType.DEBIT, "500");
@@ -224,8 +257,13 @@ class RetroactiveCorrectionServiceImplTest {
         .thenReturn(List.of(debitInterest, creditInterest));
 
     service.applyRetroactiveCorrection(
-        DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-        ANNUAL_RATE, "RET-007", "Storno test");
+        DEBT_ID,
+        EFFECTIVE_DATE,
+        new BigDecimal("50000"),
+        new BigDecimal("30000"),
+        ANNUAL_RATE,
+        "RET-007",
+        "Storno test");
 
     ArgumentCaptor<LedgerEntry> captor = forClass(LedgerEntry.class);
     verify(ledgerEntryStore, org.mockito.Mockito.atLeast(1)).saveSingle(captor.capture());
@@ -245,7 +283,9 @@ class RetroactiveCorrectionServiceImplTest {
                     e.getAccountCode().equals(TestAccountCode.INTEREST_RECEIVABLE.getCode())
                         && e.getEntryType() == EntryType.CREDIT)
             .findFirst()
-            .orElseThrow(() -> new AssertionError("Expected reversed (CREDIT) entry for INTEREST_RECEIVABLE"));
+            .orElseThrow(
+                () ->
+                    new AssertionError("Expected reversed (CREDIT) entry for INTEREST_RECEIVABLE"));
     assertThat(reversedDebit.getReversalOfTransactionId()).isEqualTo(txnId);
     assertThat(reversedDebit.getAmount()).isEqualByComparingTo("500");
   }
@@ -262,8 +302,13 @@ class RetroactiveCorrectionServiceImplTest {
     when(ledgerEntryStore.existsByReversalOfTransactionId(txnId)).thenReturn(true);
 
     service.applyRetroactiveCorrection(
-        DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-        ANNUAL_RATE, "RET-008", "Already reversed");
+        DEBT_ID,
+        EFFECTIVE_DATE,
+        new BigDecimal("50000"),
+        new BigDecimal("30000"),
+        ANNUAL_RATE,
+        "RET-008",
+        "Already reversed");
 
     // findByTransactionId must never be called for the already-reversed transaction
     verify(ledgerEntryStore, never()).findByTransactionId(txnId);
@@ -289,8 +334,13 @@ class RetroactiveCorrectionServiceImplTest {
 
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-            ANNUAL_RATE, "RET-009", "Count check");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("50000"),
+            new BigDecimal("30000"),
+            ANNUAL_RATE,
+            "RET-009",
+            "Count check");
 
     assertThat(result.getStornoEntriesPosted()).isEqualTo(2);
   }
@@ -302,16 +352,24 @@ class RetroactiveCorrectionServiceImplTest {
   @Test
   void givenNewInterestPeriods_whenApplyRetroactiveCorrection_thenNewEntriesPostedPerPeriod() {
     // Ref: RetroactiveCorrectionServiceImpl.postRecalculatedInterest — 2 entries per period.
-    InterestPeriod period1 = buildPeriod(LocalDate.of(2025, 12, 1), LocalDate.of(2026, 1, 1), "300.00");
-    InterestPeriod period2 = buildPeriod(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 1), "500.00");
+    InterestPeriod period1 =
+        buildPeriod(LocalDate.of(2025, 12, 1), LocalDate.of(2026, 1, 1), "300.00");
+    InterestPeriod period2 =
+        buildPeriod(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 1), "500.00");
 
-    when(interestAccrualService.calculatePeriodicInterest(eq(DEBT_ID), any(), any(), eq(ANNUAL_RATE)))
+    when(interestAccrualService.calculatePeriodicInterest(
+            eq(DEBT_ID), any(), any(), eq(ANNUAL_RATE)))
         .thenReturn(List.of(period1, period2));
 
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-            ANNUAL_RATE, "RET-010", "New interest");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("50000"),
+            new BigDecimal("30000"),
+            ANNUAL_RATE,
+            "RET-010",
+            "New interest");
 
     // 2 periods × 2 entries each = 4 new interest entries
     assertThat(result.getNewInterestEntriesPosted()).isEqualTo(4);
@@ -339,8 +397,13 @@ class RetroactiveCorrectionServiceImplTest {
 
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-            ANNUAL_RATE, "RET-011", "Delta check");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("50000"),
+            new BigDecimal("30000"),
+            ANNUAL_RATE,
+            "RET-011",
+            "Delta check");
 
     assertThat(result.getOldInterestTotal()).isEqualByComparingTo("500");
     assertThat(result.getNewInterestTotal()).isEqualByComparingTo("800");
@@ -356,8 +419,13 @@ class RetroactiveCorrectionServiceImplTest {
 
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("80000"),
-            ANNUAL_RATE, "RET-012", "Positive delta");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("50000"),
+            new BigDecimal("80000"),
+            ANNUAL_RATE,
+            "RET-012",
+            "Positive delta");
 
     assertThat(result.getInterestDelta()).isGreaterThan(BigDecimal.ZERO);
   }
@@ -380,8 +448,13 @@ class RetroactiveCorrectionServiceImplTest {
 
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-            ANNUAL_RATE, "RET-013", "Negative delta");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("50000"),
+            new BigDecimal("30000"),
+            ANNUAL_RATE,
+            "RET-013",
+            "Negative delta");
 
     assertThat(result.getInterestDelta()).isLessThan(BigDecimal.ZERO);
     assertThat(result.getInterestDelta()).isEqualByComparingTo("-1500");
@@ -396,8 +469,13 @@ class RetroactiveCorrectionServiceImplTest {
 
     CorrectionResult result =
         service.applyRetroactiveCorrection(
-            DEBT_ID, EFFECTIVE_DATE, new BigDecimal("50000"), new BigDecimal("30000"),
-            ANNUAL_RATE, "RET-014", "Periods check");
+            DEBT_ID,
+            EFFECTIVE_DATE,
+            new BigDecimal("50000"),
+            new BigDecimal("30000"),
+            ANNUAL_RATE,
+            "RET-014",
+            "Periods check");
 
     assertThat(result.getRecalculatedPeriods()).hasSize(1);
     assertThat(result.getRecalculatedPeriods().get(0).getInterestAmount())

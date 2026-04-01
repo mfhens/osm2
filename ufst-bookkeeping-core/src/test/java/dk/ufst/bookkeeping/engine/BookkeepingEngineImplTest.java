@@ -72,7 +72,8 @@ class BookkeepingEngineImplTest {
         EntryCategory.DEBT_REGISTRATION);
 
     verify(ledgerEntryStore)
-        .saveDoubleEntry(forClass(LedgerEntry.class).capture(), forClass(LedgerEntry.class).capture());
+        .saveDoubleEntry(
+            forClass(LedgerEntry.class).capture(), forClass(LedgerEntry.class).capture());
   }
 
   @Test
@@ -247,7 +248,8 @@ class BookkeepingEngineImplTest {
 
     verify(ledgerEntryStore).saveDoubleEntry(debitCaptor.capture(), creditCaptor.capture());
     assertThat(debitCaptor.getValue().getEntryCategory()).isEqualTo(EntryCategory.INTEREST_ACCRUAL);
-    assertThat(creditCaptor.getValue().getEntryCategory()).isEqualTo(EntryCategory.INTEREST_ACCRUAL);
+    assertThat(creditCaptor.getValue().getEntryCategory())
+        .isEqualTo(EntryCategory.INTEREST_ACCRUAL);
   }
 
   @Test
