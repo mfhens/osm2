@@ -1,0 +1,174 @@
+---
+title: OSS2 Domain Concept Model — Den juridiske vejledning 2026-1
+---
+classDiagram
+    direction TB
+
+    %% ─────────────────────────────────────────────
+    %% SCHEMES
+    %% ─────────────────────────────────────────────
+    class Særordning {
+        <<abstract>>
+        +SchemeType type
+    }
+    class IkkeEUOrdning {
+        +Leveringstype: ydelser til forbrugere
+        +Krav: ikke-EU-etableret
+    }
+    class EUOrdning {
+        +Leveringstype: varer + ydelser
+        +Bindingsperiode: 2 år
+    }
+    class Importordning {
+        +Leveringstype: varer fra tredjelande
+        +Beløbsgrænse: ≤ EUR 150
+    }
+    Særordning <|-- IkkeEUOrdning
+    Særordning <|-- EUOrdning
+    Særordning <|-- Importordning
+
+    %% ─────────────────────────────────────────────
+    %% PARTIES
+    %% ─────────────────────────────────────────────
+    class AfgiftspligtigPerson {
+        +UUID registrantId
+        +String legalName
+        +String homeCountry
+        +String vatNumber
+        +RegistrantStatus status
+    }
+    class IkkeafgiftspligtigPerson {
+        <<consumer>>
+        +EU-etableret/bosiddende
+    }
+    class Formidler {
+        +EU-etableret
+        +Solidarisk hæftelse
+    }
+    AfgiftspligtigPerson "1" --> "*" Særordning : tilmelder sig
+    Formidler "0..1" --> "1" AfgiftspligtigPerson : repræsenterer (Import)
+    Formidler --|> AfgiftspligtigPerson : er også
+
+    %% ─────────────────────────────────────────────
+    %% MEMBER STATES
+    %% ─────────────────────────────────────────────
+    class Identifikationsmedlemsland {
+        +ISO_3166_1 countryCode
+        +Tildeler momsregistreringsnummer
+        +Fordeler moms til MSC
+    }
+    class Forbrugsmedlemsland {
+        +ISO_3166_1 countryCode
+        +Modtager moms fra MSI
+    }
+    AfgiftspligtigPerson "1" --> "1" Identifikationsmedlemsland : registreret i (pr. ordning)
+    Identifikationsmedlemsland "1" --> "*" Forbrugsmedlemsland : videresender moms til
+
+    %% ─────────────────────────────────────────────
+    %% REGISTRATION LIFECYCLE
+    %% ─────────────────────────────────────────────
+    class SchemeRegistration {
+        +UUID id
+        +SchemeType schemeType
+        +LocalDate validFrom
+        +LocalDate validTo
+        +String vatNumber
+        +String registrationStatus
+        +LocalDate bindingPeriodEnd
+    }
+    class Anmeldelse {
+        +Identifikationsoplysninger
+        +Ønsket startdato
+        +Erklæring (Ikke-EU)
+    }
+    class Momsregistreringsnummer {
+        +String number
+        +Scheme-specifik (Non-EU/Import)
+        +Eksisterende (EU hvis allerede reg.)
+        +Tildeles inden 8 dage
+    }
+
+    AfgiftspligtigPerson "1" --> "*" SchemeRegistration : har
+    Anmeldelse "1" --> "1" SchemeRegistration : opretter
+    SchemeRegistration "1" --> "1" Momsregistreringsnummer : tildeles
+    Identifikationsmedlemsland "1" --> "*" SchemeRegistration : identificerer via
+
+    %% ─────────────────────────────────────────────
+    %% DEREGISTRATION
+    %% ─────────────────────────────────────────────
+    class Afmeldelse {
+        <<abstract>>
+    }
+    class FrivilligAfmeldelse {
+        +Notice: ≥15 dage
+        +Virkning: 1. dag næste kvartal/måned
+        +Ingen udelukkelsesperiode
+    }
+    class Tvangsafmeldelse {
+        +Myndighedsinitieret
+    }
+    class Udelukkelse {
+        +ExclusionCriterion criterion
+        +LocalDate exclusionEffectiveDate
+    }
+    class Udelukkelsesperiode {
+        +Varighed: 2 år
+        +Fra: udelukkelsens ikrafttrædelse
+        +banLiftedAt: LocalDate
+    }
+    class ExclusionBan {
+        +UUID id
+        +SchemeType schemeType
+        +LocalDate banLiftedAt
+        +String criterion
+    }
+
+    Afmeldelse <|-- FrivilligAfmeldelse
+    Afmeldelse <|-- Tvangsafmeldelse
+    Tvangsafmeldelse <|-- Udelukkelse
+    Udelukkelse "1" --> "1" Udelukkelsesperiode : udløser
+    Udelukkelsesperiode "1" --> "1" ExclusionBan : implementeret som
+    SchemeRegistration "1" --> "0..1" Afmeldelse : afsluttes via
+
+    %% ─────────────────────────────────────────────
+    %% RETURNS & PAYMENT
+    %% ─────────────────────────────────────────────
+    class Afgiftsangivelse {
+        <<planned: osm2-return-service>>
+        +Angivelsesperiode period
+        +Forbrugsmedlemsland[] lines
+        +Nulangivelse: påkrævet
+        +Ingen afrunding
+    }
+    class Angivelsesperiode {
+        +NON_EU: kvartal
+        +EU: kvartal
+        +IMPORT: måned
+        +Frist: udgangen af efterfølgende måned
+    }
+    class Betaling {
+        <<planned: osm2-payment-service>>
+        +Betales til MSI
+        +Samtidig med angivelse
+        +DKK (Danmark som MSI)
+    }
+    class Regnskab {
+        <<planned: osm2-records-service>>
+        +Opbevaring: 10 år
+        +Elektronisk tilgængeligt
+    }
+
+    AfgiftspligtigPerson "1" --> "*" Afgiftsangivelse : indgiver
+    Afgiftsangivelse "1" --> "1" Angivelsesperiode : dækker
+    Afgiftsangivelse "1" --> "1" Betaling : afvikles via
+    AfgiftspligtigPerson "1" --> "1" Regnskab : vedligeholder
+
+    %% ─────────────────────────────────────────────
+    %% IMPLEMENTATION NOTES (legend)
+    %% ─────────────────────────────────────────────
+    %% ✅ Implemented: Særordning, AfgiftspligtigPerson, SchemeRegistration,
+    %%    Momsregistreringsnummer, Identifikationsmedlemsland, FrivilligAfmeldelse,
+    %%    Udelukkelse, Udelukkelsesperiode, Bindingsperiode
+    %% ⚠️  Partially: Forbrugsmedlemsland (return lines not yet modelled)
+    %% ❌ Not implemented: Formidler, Afgiftsangivelse, Betaling, Regnskab,
+    %%    Fjernsalg (supply types)

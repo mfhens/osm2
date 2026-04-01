@@ -153,4 +153,54 @@ petitions:
       archive within retention window) has significant infrastructure implications for OSS-02/03/04
       data models. Depends on all preceding petitions.
 
-technical_backlog: []
+concept_model:
+  version: "1.0"
+  status: draft
+  created: "2026-04-01"
+  approved_by: ~
+  approved_date: ~
+  artifacts:
+    yaml: domain/concept-model.yaml
+    diagram: domain/concept-model.mmd
+    catalogue: domain/concept-model-catalogue.md
+  concepts_extracted: 36
+  areas:
+    - Schemes
+    - Parties
+    - Member States
+    - Registration
+    - Deregistration
+    - Supplies
+    - Returns
+    - Payment
+    - Records
+  gap_summary:
+    implemented: 9     # registration lifecycle fully covered by OSS-01 + OSS-02
+    partial: 2         # Forbrugsmedlemsland return lines, FastForretningssted entity
+    missing: 12        # Formidler, Afgiftsangivelse, Betaling, Hæftelse, Regnskab, supply types
+  gap_to_petition_mapping:
+    Formidler: OSS-03          # intermediary entity needed for Import scheme registration
+    Afgiftsangivelse: OSS-04   # VAT return model — osm2-return-service
+    Angivelsesperiode: OSS-04
+    Betaling: OSS-05           # payment model — osm2-payment-service
+    Hæftelse: OSS-05           # joint liability enforcement depends on Formidler + payment
+    Regnskab: OSS-06           # records model — osm2-records-service
+    Opbevaringsperiode: OSS-06
+  notes: >
+    All high-severity concept model gaps map to existing petition entries (OSS-03 through
+    OSS-06) confirming backlog ordering is correct. Concept model requires domain expert
+    approval (set approved_by + approved_date) before driving architecture and translation.
+
+technical_backlog:
+  - id: TB-001
+    title: "Concept model — domain expert approval"
+    description: >
+      domain/concept-model.yaml was extracted from Den juridiske vejledning 2026-1.
+      Requires review and approval by a domain expert with VAT/OSS authority knowledge.
+      Set concept_model.approved_by and concept_model.approved_date when done.
+      Until approved, the model is authoritative for development purposes but not for
+      legal or regulatory submissions.
+    status: open
+    priority: medium
+    created: "2026-04-01"
+    blocking: []

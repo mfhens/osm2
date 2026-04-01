@@ -1,0 +1,759 @@
+---
+# OSS2 Domain Concept Model
+# Source: Den juridiske vejledning 2026-1 — D.A.16 (SKAT / Skatteforvaltningen)
+# Retrieved: 2026-03-30
+# Authority: Skatteforvaltningen
+# Locale: da
+# Legal basis: ML §§ 66–66u; Direktiv 2017/2455; Direktiv 2019/1995; Forordning 282/2011
+
+meta:
+  version: "1.0"
+  status: draft
+  maintainer: concept-model-curator
+  source_files:
+    - docs/references/DA16.3.1.4-definitioner.md
+    - docs/references/DA16.3.2-ikke-eu-ordningen.md
+    - docs/references/DA16.3.3-eu-ordningen.md
+    - docs/references/DA16.3.4-importordningen.md
+    - docs/references/DA16.3.5.1-anmeldelse-og-virkningstidspunkt.md
+    - docs/references/DA16.3.5.2-oplysninger-i-anmeldelsen.md
+    - docs/references/DA16.3.5.3-tildeling-af-momsnummer.md
+    - docs/references/DA16.3.5.5-aendringer.md
+    - docs/references/DA16.3.5.6-tvangsafmeldelse-og-udelukkelse.md
+    - docs/references/DA16.3.5.7-frivillig-afmeldelse.md
+    - docs/references/DA16.3.6.1.1-angivelsesperiode-og-frist.md
+    - docs/references/DA16.3.6.1.2-angivelsens-indhold.md
+    - docs/references/DA16.3.7-betaling.md
+    - docs/references/DA16.3.8-regnskab.md
+
+concepts:
+
+  # ─────────────────────────────────────────────
+  # SCHEMES
+  # ─────────────────────────────────────────────
+
+  - id: saerordning
+    term: "Særordning"
+    english: "Special scheme (OSS)"
+    definition: |
+      Fællesbetegnelse for de tre One Stop Shop-ordninger (Ikke-EU-ordningen,
+      EU-ordningen og Importordningen), der giver afgiftspligtige personer mulighed
+      for at anmelde, angive og betale moms for leveringer i alle forbrugsmedlemslande
+      via ét identifikationsmedlemsland.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66", "ML §§ 66a–66u", "Momssystemdirektivet art. 358–369x"]
+    is_abstract: true
+    relationships:
+      - type: specializes_into
+        targets: [ikke-eu-ordning, eu-ordning, importordning]
+    implementation:
+      status: implemented
+      notes: "Represented as SchemeType enum (NON_EU, EU, IMPORT)"
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/SchemeType.java
+
+  - id: ikke-eu-ordning
+    term: "Ikke-EU-ordningen"
+    english: "Non-Union scheme"
+    definition: |
+      Særordning for afgiftspligtige personer, der ikke har hjemsted eller fast
+      forretningssted i EU, og som leverer ydelser til ikkeafgiftspligtige personer
+      (forbrugere) i EU-lande. Afgiftspligtige personer kan vælge ét
+      identifikationsmedlemsland (fx Danmark), hvorfra de opfylder alle
+      momsforpligtelser i forbrugsmedlemslandene.
+    scope: [NON_EU]
+    legal_basis: ["ML §§ 66a–66c", "Momssystemdirektivet art. 358a–369"]
+    preconditions:
+      - "Ingen hjemsted for økonomisk virksomhed i EU"
+      - "Ingen fast forretningssted i EU"
+    applies_to:
+      supply_types: ["Levering af ydelser til ikkeafgiftspligtige personer i EU"]
+    relationships:
+      - type: is_a
+        target: saerordning
+      - type: uses_role
+        target: afgiftspligtig-person
+    implementation:
+      status: implemented
+      refs:
+        - "SchemeType.NON_EU"
+
+  - id: eu-ordning
+    term: "EU-ordningen"
+    english: "Union scheme"
+    definition: |
+      Særordning for afgiftspligtige personer etableret i EU. Dækker (1) levering
+      af ydelser til ikkeafgiftspligtige personer i andre EU-lande, (2) fjernsalg
+      af varer inden for EU, og (3) visse platformsleveringer. Identifikationsmedlemslandet
+      er det land, hvor den afgiftspligtige person har hjemsted for sin
+      erhvervsmæssige virksomhed, eller — hvis dette er udenfor EU — et land
+      med fast forretningssted.
+    scope: [EU]
+    legal_basis: ["ML §§ 66d–66j", "Momssystemdirektivet art. 369a–369k"]
+    preconditions:
+      - "Etableret i EU (hjemsted eller fast forretningssted)"
+    applies_to:
+      supply_types:
+        - "Levering af ydelser til ikkeafgiftspligtige personer i EU"
+        - "Fjernsalg af varer inden for EU"
+        - "Platformsleveringer (ML § 4c stk. 2)"
+    binding_period:
+      duration_years: 2
+      legal_basis: "ML § 66d stk. 2"
+    relationships:
+      - type: is_a
+        target: saerordning
+      - type: uses_role
+        target: afgiftspligtig-person
+    implementation:
+      status: implemented
+      refs:
+        - "SchemeType.EU"
+        - "SchemeRegistration.bindingPeriodEnd"
+        - "SchemeRegistration.bindingRuleType"
+
+  - id: importordning
+    term: "Importordningen"
+    english: "Import scheme"
+    definition: |
+      Særordning for fjernsalg af varer indført fra steder uden for EU
+      (tredjelande/tredjelandsområder) med en egentlig værdi på højst 150 EUR.
+      Gælder ikke punktafgiftspligtige varer. Kan anvendes af afgiftspligtige
+      personer direkte eller via en formidler etableret i EU.
+    scope: [IMPORT]
+    legal_basis: ["ML §§ 66m–66t", "Momssystemdirektivet art. 369l–369x"]
+    preconditions:
+      - "Fjernsalg af varer indført fra tredjelande/tredjelandsområder"
+      - "Varernes egentlige værdi ≤ 150 EUR"
+      - "Varer er ikke punktafgiftspligtige"
+    applies_to:
+      supply_types:
+        - "Fjernsalg af varer indført fra tredjelandsområder (≤ EUR 150)"
+    relationships:
+      - type: is_a
+        target: saerordning
+      - type: optionally_uses_role
+        target: formidler
+      - type: uses_role
+        target: afgiftspligtig-person
+    implementation:
+      status: implemented
+      refs:
+        - "SchemeType.IMPORT"
+
+  # ─────────────────────────────────────────────
+  # PARTIES
+  # ─────────────────────────────────────────────
+
+  - id: afgiftspligtig-person
+    term: "Afgiftspligtig person"
+    english: "Taxable person"
+    definition: |
+      Enhver person, der selvstændigt og uanset stedet udøver økonomisk virksomhed
+      uanset formålet med eller resultatet af denne virksomhed. I OSS-kontekst:
+      den person, der anvender en særordning til at opfylde momsforpligtelser
+      i forbrugsmedlemslandene.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 3", "Momssystemdirektivet art. 9"]
+    subtypes:
+      - id: eu-etableret-person
+        term: "EU-etableret afgiftspligtig person"
+        english: "EU-established taxable person"
+        notes: "Har hjemsted eller fast forretningssted i mindst ét EU-land"
+      - id: ikke-eu-etableret-person
+        term: "Ikke-EU-etableret afgiftspligtig person"
+        english: "Non-EU-established taxable person"
+        notes: "Hverken hjemsted eller fast forretningssted i noget EU-land"
+    relationships:
+      - type: registers_for
+        target: saerordning
+      - type: assigned
+        target: momsregistreringsnummer
+      - type: files
+        target: afgiftsangivelse
+      - type: maintains
+        target: regnskab
+    implementation:
+      status: implemented
+      entity: "Registrant"
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/Registrant.java
+
+  - id: ikkeafgiftspligtig-person
+    term: "Ikkeafgiftspligtig person"
+    english: "Non-taxable person (consumer)"
+    definition: |
+      Person, der ikke udøver selvstændig erhvervsmæssig virksomhed — typisk
+      en privat forbruger. I OSS-sammenhæng: den person, som leveringen er
+      bestemt til, og som er etableret, bosiddende eller sædvanligvis
+      opholdstagende i et EU-forbrugsmedlemsland.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["Momssystemdirektivet art. 358 nr. 1"]
+    relationships:
+      - type: receives
+        target: levering
+    implementation:
+      status: not_implemented
+      notes: "Consumer is out of scope for current osm2 services — referenced only indirectly"
+
+  - id: formidler
+    term: "Formidler"
+    english: "Intermediary"
+    definition: |
+      En i EU etableret afgiftspligtig person, der er udpeget af en afgiftspligtig
+      person, som anvender importordningen, til at indsende momsangivelser og
+      indbetale moms på dennes vegne. Formidleren hæfter solidarisk med den
+      afgiftspligtige person for momsen.
+    scope: [IMPORT]
+    legal_basis: ["ML § 66m", "Momssystemdirektivet art. 369l"]
+    preconditions:
+      - "Etableret i EU"
+    responsibilities:
+      - "Indsende momsangivelser på den afgiftspligtige persons vegne"
+      - "Indbetale moms på den afgiftspligtige persons vegne"
+      - "Opbevare regnskab for hver repræsenteret afgiftspligtig person"
+    liability: "Solidarisk hæftelse med den afgiftspligtige person (ML § 66m)"
+    relationships:
+      - type: represents
+        target: afgiftspligtig-person
+      - type: files_on_behalf_of
+        target: afgiftsangivelse
+    implementation:
+      status: not_implemented
+      notes: "No Intermediary entity yet; future petition required"
+      gap_severity: medium
+
+  # ─────────────────────────────────────────────
+  # MEMBER STATES
+  # ─────────────────────────────────────────────
+
+  - id: identifikationsmedlemsland
+    term: "Identifikationsmedlemsland"
+    english: "Member State of identification (MSI)"
+    abbreviation: MSI
+    definition: |
+      Det EU-land, over for hvilket den afgiftspligtige person opfylder
+      momsforpligtelserne for alle de EU-lande (forbrugsmedlemslande), som
+      leveringerne er bestemt til. Den afgiftspligtige person kan kun have ét
+      identifikationsmedlemsland pr. ordning ad gangen.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66a nr. 3", "Momssystemdirektivet art. 358a nr. 3", "art. 369a nr. 3", "art. 369l"]
+    relationships:
+      - type: receives_registration_from
+        target: afgiftspligtig-person
+      - type: distributes_vat_to
+        target: forbrugsmedlemsland
+    implementation:
+      status: implemented
+      field: "Registrant.identificationMemberState (ISO 3166-1 alpha-2)"
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/Registrant.java
+
+  - id: forbrugsmedlemsland
+    term: "Forbrugsmedlemsland"
+    english: "Member State of consumption (MSC)"
+    abbreviation: MSC
+    definition: |
+      Det EU-land, hvori leveringen i henhold til leveringsstedsreglerne anses
+      for at have fundet sted, og hvortil momsen videresender af
+      identifikationsmedlemslandet.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["Momssystemdirektivet art. 358 nr. 3", "art. 369a nr. 4", "art. 369l"]
+    relationships:
+      - type: receives_vat_from
+        target: identifikationsmedlemsland
+    implementation:
+      status: partially_implemented
+      notes: "Captured per return line in afgiftsangivelse — not yet modelled in osm2"
+
+  - id: fast-forretningssted
+    term: "Fast forretningssted"
+    english: "Fixed establishment"
+    definition: |
+      Et forretningssted, der ikke er hjemstedet for den erhvervsmæssige
+      virksomhed, men som besidder en tilstrækkelig grad af permanent karakter
+      og en passende struktur med hensyn til menneskelige og tekniske ressourcer
+      til at modtage og anvende de ydelser, der leveres til det.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["Momsforordningen art. 11"]
+    relationships:
+      - type: located_in
+        target: forbrugsmedlemsland
+      - type: belongs_to
+        target: afgiftspligtig-person
+    implementation:
+      status: not_implemented
+      notes: "Fixed establishment data collected in registration data but not stored as separate entity"
+      gap_severity: low
+
+  # ─────────────────────────────────────────────
+  # REGISTRATION
+  # ─────────────────────────────────────────────
+
+  - id: anmeldelse
+    term: "Anmeldelse"
+    english: "Registration notification"
+    definition: |
+      Elektronisk erklæring, som den afgiftspligtige person (eller formidler)
+      indgiver til identifikationsmedlemslandets skattemyndighed for at tilslutte
+      sig en særordning. Indeholder identifikationsoplysninger og ønsket startdato.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML §§ 66b, 66e, 66n", "Momsbekendtgørelsens §§ 115–119"]
+    data_elements:
+      - "Navn / Trading names"
+      - "Hjemland + skatteregistreringsnummer"
+      - "Postadresse"
+      - "E-mailadresse"
+      - "Kontaktperson"
+      - "Telefonnummer"
+      - "Bankoplysninger"
+      - "Elektroniske websteder"
+      - "Ønsket startdato"
+      - "Eventuelle eksisterende/tidligere registreringer i andre ordninger"
+    timing:
+      effective_from_rule: |
+        Normalt: 1. dag i kvartalet efter kvartalet for anmeldelse.
+        Undtagelse (tidlig levering): fra første leveringsdag, hvis denne er
+        inden kvartalets start (ML § 66b stk. 3).
+    relationships:
+      - type: initiates
+        target: scheme-registration
+      - type: triggers
+        target: momsregistreringsnummer-tildeling
+    implementation:
+      status: implemented
+      method: "RegistrationService.submitRegistration()"
+      entity: "SchemeRegistration (registrationStatus=PENDING/APPROVED)"
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/service/RegistrationService.java
+
+  - id: momsregistreringsnummer
+    term: "Momsregistreringsnummer / Momsregistreringsnummer tildelt ved OSS"
+    english: "OSS VAT identification number"
+    definition: |
+      Individuelt nummer tildelt den afgiftspligtige person (eller formidler)
+      af identifikationsmedlemslandet inden 8 dage efter modtagelse af
+      identifikationsoplysningerne. For EU-ordningen: eksisterende dansk
+      momsnummer (hvis allerede momsregistreret) eller nyt individuelt nummer.
+      For Ikke-EU- og Importordningen: ordningsspecifikt nummer der kun kan
+      bruges i den pågældende ordning.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66b stk. 2", "Momsbekendtgørelsens §§ 116–119", "Momssystemdirektivet art. 362, 369d, 369q"]
+    assignment_deadline_days: 8
+    scheme_specific_notes:
+      NON_EU: "Tildeles altid nyt individuelt nummer — kun til brug for ikke-EU-ordningen"
+      EU: "Eksisterende dansk momsnummer hvis allerede registreret; ellers nyt individuelt nummer"
+      IMPORT: "Tildeles nyt individuelt nummer — kun til brug for importordningen"
+    relationships:
+      - type: identifies
+        target: afgiftspligtig-person
+      - type: assigned_by
+        target: identifikationsmedlemsland
+      - type: assigned_via
+        target: anmeldelse
+    implementation:
+      status: implemented
+      fields: ["Registrant.vatNumber", "SchemeRegistration.vatNumber", "SchemeRegistration.vatNumberFlag"]
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/Registrant.java
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/SchemeRegistration.java
+
+  - id: scheme-registration
+    term: "Tilmelding / Registrering i ordning"
+    english: "Scheme registration"
+    definition: |
+      Registreringen af en afgiftspligtig person i en bestemt særordning.
+      Har gyldighedsperiode (validFrom/validTo) som udtryk for reel-tids-perspektiv
+      og transaktionssporing via Envers-revisionslog.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML §§ 66b, 66e, 66n"]
+    lifecycle_states:
+      - PENDING
+      - APPROVED
+      - ACTIVE
+      - DEREGISTERED
+      - EXCLUDED
+    relationships:
+      - type: has_one
+        target: momsregistreringsnummer
+      - type: has_one
+        target: identifikationsmedlemsland
+      - type: may_have
+        target: bindingsperiode
+      - type: may_have
+        target: udelukkelsesperiode
+    implementation:
+      status: implemented
+      entity: "SchemeRegistration"
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/SchemeRegistration.java
+
+  - id: bindingsperiode
+    term: "Bindingsperiode"
+    english: "Binding period"
+    definition: |
+      Den 2-årige periode, hvori en afgiftspligtig person, der anvender
+      EU-ordningen, er bundet til det valgte identifikationsmedlemsland.
+      Ophør inden for bindingsperioden kræver særlig begrundelse.
+    scope: [EU]
+    legal_basis: ["ML § 66d stk. 2"]
+    duration_years: 2
+    relationships:
+      - type: constrains
+        target: scheme-registration
+    implementation:
+      status: implemented
+      fields: ["SchemeRegistration.bindingPeriodEnd", "SchemeRegistration.bindingRuleType"]
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/SchemeRegistration.java
+
+  # ─────────────────────────────────────────────
+  # DEREGISTRATION
+  # ─────────────────────────────────────────────
+
+  - id: afmeldelse
+    term: "Afmeldelse"
+    english: "Deregistration"
+    definition: |
+      Ophør af en afgiftspligtig persons deltagelse i en særordning.
+      Kan ske frivilligt (på den afgiftspligtiges initiativ) eller
+      tvangsmæssigt (på myndighedernes initiativ). Fællesbetegnelse.
+    scope: [NON_EU, EU, IMPORT]
+    is_abstract: true
+    relationships:
+      - type: specializes_into
+        targets: [frivillig-afmeldelse, tvangsafmeldelse]
+    implementation:
+      status: implemented
+      notes: "Both subtypes implemented; abstract concept not explicitly modelled"
+
+  - id: frivillig-afmeldelse
+    term: "Frivillig afmeldelse"
+    english: "Voluntary deregistration"
+    definition: |
+      Ophør af deltagelse i en særordning på den afgiftspligtige persons
+      eget initiativ. Kræver varsling mindst 15 dage inden udløbet af kvartalet
+      (Non-EU/EU) eller måneden (Import) forud for ophørskvartalet/-måneden.
+      Ophøret får virkning fra den første dag i det efterfølgende kvartal/måned.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66i stk. 1 (Non-EU/EU)", "ML § 66s (Import)", "Momsforordningen art. 57g"]
+    timing:
+      NON_EU_EU:
+        notice_deadline: "≥15 dage før udgangen af kvartalet inden ophørskvartalet"
+        effective_date: "1. dag i det efterfølgende kvartal"
+      IMPORT:
+        notice_deadline: "≥15 dage før udgangen af måneden inden ophørsmåneden"
+        effective_date: "1. dag i den efterfølgende måned"
+    note: |
+      Ophør medfører IKKE automatisk udelukkelsesperiode (ændret med direktiv 2019/2026).
+    relationships:
+      - type: is_a
+        target: afmeldelse
+    implementation:
+      status: implemented
+      method: "RegistrationService.deregisterRegistration()"
+      fields: ["SchemeRegistration.deregistrationEffectiveDate", "SchemeRegistration.deregistrationTimely"]
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/service/RegistrationService.java
+
+  - id: tvangsafmeldelse
+    term: "Tvangsafmeldelse"
+    english: "Forced deregistration"
+    definition: |
+      Myndighedsinitieret afmeldelse, som sker ved brud på betingelserne for
+      at anvende en særordning. Tvangsafmeldelse kan eskalere til udelukkelse
+      ved vedvarende manglende overholdelse.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66d stk. 3 (EU)", "Momsbekendtgørelsen §§ 115–119"]
+    relationships:
+      - type: is_a
+        target: afmeldelse
+      - type: may_escalate_to
+        target: udelukkelse
+    implementation:
+      status: implemented
+      notes: "Covered by ExclusionService; forced deregistration flows through exclusion pathway"
+
+  - id: udelukkelse
+    term: "Udelukkelse"
+    english: "Exclusion"
+    definition: |
+      Den mest alvorlige form for tvangsafmeldelse, som iværksættes ved vedvarende
+      manglende overholdelse. Medfører en 2-årig udelukkelsesperiode, hvori den
+      afgiftspligtige person ikke må tilslutte sig den pågældende ordning i noget EU-land.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66d stk. 3 (EU)", "ML § 66b stk. 5 (Non-EU)", "ML § 66n stk. 3 (Import)"]
+    exclusion_criteria:
+      - id: PERSISTENT_NON_COMPLIANCE
+        term: "Vedvarende manglende overholdelse"
+        english: "Persistent non-compliance"
+        definition: |
+          Opfyldt hvis den afgiftspligtige person: (1) ikke har indsendt
+          momsangivelse i 3 på hinanden følgende afgiftsperioder, (2) ikke har
+          betalt moms til tiden i 3 på hinanden følgende afgiftsperioder, eller
+          (3) ikke har efterkommet regler om regnskab mv. efter tvangsafmeldelsesvarsel.
+      - id: NO_LONGER_ELIGIBLE
+        term: "Ophørt med at opfylde betingelser"
+        english: "No longer meets eligibility criteria"
+      - id: FRAUD
+        term: "Svig / misbrug"
+        english: "Fraud or abuse"
+    relationships:
+      - type: is_a
+        target: tvangsafmeldelse
+      - type: triggers
+        target: udelukkelsesperiode
+    implementation:
+      status: implemented
+      method: "ExclusionService.excludeRegistration()"
+      entity: "ExclusionBan + SchemeRegistration (exclusion fields)"
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/service/ExclusionService.java
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/ExclusionBan.java
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/ExclusionCriterion.java
+
+  - id: udelukkelsesperiode
+    term: "Udelukkelsesperiode"
+    english: "Exclusion period"
+    definition: |
+      Den 2-årige periode regnet fra udelukkelsens ikrafttrædelsesdato (valid_to
+      for den udelukkede registrering), hvori den afgiftspligtige person ikke
+      kan tilslutte sig den pågældende særordning i noget EU-land.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66d stk. 3", "ML § 66b stk. 5", "ML § 66n stk. 3"]
+    duration_years: 2
+    start_date_rule: "Fra udelukkelsens ikrafttrædelsesdato (SchemeRegistration.validTo)"
+    relationships:
+      - type: triggered_by
+        target: udelukkelse
+      - type: prevents
+        target: anmeldelse
+    implementation:
+      status: implemented
+      entity: "ExclusionBan"
+      field: "ExclusionBan.banLiftedAt"
+      refs:
+        - osm2-registration-service/src/main/java/dk/osm2/registration/domain/ExclusionBan.java
+
+  # ─────────────────────────────────────────────
+  # SUPPLIES
+  # ─────────────────────────────────────────────
+
+  - id: levering
+    term: "Levering"
+    english: "Supply"
+    definition: |
+      En afgiftspligtig transaktion (levering af varer eller ydelser)
+      foretaget af en afgiftspligtig person til en forbruger (ikkeafgiftspligtig
+      person) i et forbrugsmedlemsland og omfattet af en særordning.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML §§ 4–9"]
+    is_abstract: true
+    relationships:
+      - type: specializes_into
+        targets: [fjernsalg-inden-for-eu, fjernsalg-fra-tredjelande, elektronisk-tjenesteydelse]
+
+  - id: fjernsalg-inden-for-eu
+    term: "Fjernsalg af varer inden for EU"
+    english: "Intra-EU distance sales of goods"
+    definition: |
+      Levering af varer, der af leverandøren eller på dennes vegne forsendes
+      eller transporteres fra et EU-land til et andet, til en forbruger.
+      Beskatningsstedet er forbrugerens EU-land, når leverandørens samlede
+      salg overstiger beløbsgrænsen (EUR 10.000/år) eller valg er truffet.
+    scope: [EU]
+    legal_basis: ["ML § 14 stk. 1 nr. 2", "ML §§ 66d–66j", "Momssystemdirektivet art. 33"]
+    relationships:
+      - type: is_a
+        target: levering
+    implementation:
+      status: not_implemented
+      notes: "Covered by return service (osm2-return-service) — not yet implemented"
+
+  - id: fjernsalg-fra-tredjelande
+    term: "Fjernsalg af varer indført fra tredjelandsområder"
+    english: "Distance sales of goods imported from third territories"
+    definition: |
+      Levering af varer forsendt eller transporteret fra steder uden for EU
+      (tredjelande eller tredjelandsområder) til forbrugere i EU. Kun varer
+      med egentlig værdi ≤ EUR 150; punktafgiftspligtige varer er undtaget.
+    scope: [IMPORT]
+    legal_basis: ["ML § 4b", "ML §§ 66m–66t", "Momssystemdirektivet art. 33a"]
+    value_threshold_eur: 150
+    excise_goods_excluded: true
+    relationships:
+      - type: is_a
+        target: levering
+    implementation:
+      status: not_implemented
+      notes: "Covered by return service — not yet implemented"
+
+  - id: elektronisk-tjenesteydelse
+    term: "Elektronisk leverede ydelser"
+    english: "Electronically supplied services"
+    definition: |
+      Ydelser leveret via internettet eller et elektronisk netværk, der i høj grad
+      er automatiserede og kun i begrænset omfang kræver menneskelig indgriben,
+      herunder software, apps, streaming, onlinespil m.v.
+    scope: [NON_EU, EU]
+    legal_basis: ["ML § 21d", "Momsforordningen art. 7"]
+    relationships:
+      - type: is_a
+        target: levering
+    implementation:
+      status: not_implemented
+      notes: "Service type classification not modelled in current services"
+
+  # ─────────────────────────────────────────────
+  # COMPLIANCE — RETURNS
+  # ─────────────────────────────────────────────
+
+  - id: afgiftsangivelse
+    term: "Afgiftsangivelse / Momsangivelse"
+    english: "VAT return"
+    definition: |
+      Periodisk elektronisk angivelse, som den afgiftspligtige person (eller
+      formidler) indgiver til identifikationsmedlemslandet, med opgørelse af
+      moms for leveringer i alle forbrugsmedlemslande i angivelsesperioden.
+      Skal indgives uanset om der er foretaget leveringer (nulangivelse kræves).
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66g (Non-EU/EU)", "ML § 66p (Import)", "Momssystemdirektivet art. 364–365, 369f–369h, 369s–369t"]
+    content:
+      - "Momsregistreringsnummer"
+      - "Per forbrugsmedlemsland: samlet afgiftspligtig værdi uden moms"
+      - "Gældende afgiftssatser"
+      - "Samlet skyldigt afgiftsbeløb opdelt efter satser"
+      - "Eventuelle rettelser til tidligere angivelser"
+    currency_rule: "Beløb angives i DKK (Danmark som MSI); ingen afrunding tilladt"
+    null_return_required: true
+    relationships:
+      - type: filed_for
+        target: angivelsesperiode
+      - type: filed_by
+        target: afgiftspligtig-person
+      - type: references
+        target: forbrugsmedlemsland
+      - type: settled_by
+        target: betaling
+    implementation:
+      status: not_implemented
+      planned_service: "osm2-return-service"
+      gap_severity: high
+
+  - id: angivelsesperiode
+    term: "Angivelsesperiode / Afgiftsperiode"
+    english: "Return period / Tax period"
+    definition: |
+      Den periode, som en momsangivelse dækker. For Ikke-EU- og EU-ordningen:
+      kalenderkvartalet. For Importordningen: kalendermåneden.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66g stk. 1", "ML § 66p stk. 1"]
+    period_by_scheme:
+      NON_EU: "Kvartal"
+      EU: "Kvartal"
+      IMPORT: "Måned"
+    filing_deadline: "Senest udgangen af måneden efter udløbet af angivelsesperioden"
+    relationships:
+      - type: covered_by
+        target: afgiftsangivelse
+    implementation:
+      status: not_implemented
+      planned_service: "osm2-return-service"
+
+  # ─────────────────────────────────────────────
+  # COMPLIANCE — PAYMENT
+  # ─────────────────────────────────────────────
+
+  - id: betaling
+    term: "Betaling"
+    english: "VAT payment"
+    definition: |
+      Indbetaling af den moms, der fremgår af momsangivelsen. Skal ske samtidig
+      med indgivelsen af angivelsen, dog senest ved angivelsesfristen. Betales
+      til identifikationsmedlemslandet, som fordeler beløbet til forbrugsmedlemslandene.
+      Rettelser kan kun ske med reference til den specifikke angivelse.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66g stk. 1 (Non-EU/EU)", "ML § 66p stk. 3 (Import)", "Momsforordningen art. 62–63b"]
+    currency: "DKK (når Danmark er MSI)"
+    no_netting_allowed: true
+    relationships:
+      - type: settles
+        target: afgiftsangivelse
+      - type: paid_to
+        target: identifikationsmedlemsland
+    implementation:
+      status: not_implemented
+      planned_service: "osm2-payment-service"
+      gap_severity: high
+
+  - id: haeftelse
+    term: "Hæftelse"
+    english: "Joint and several liability"
+    definition: |
+      I importordningen hæfter den afgiftspligtige person og formidleren
+      solidarisk for den moms, der skal betales via ordningen. Begge parter
+      er betalingspligtige — formidleren efter særordningens regler,
+      den afgiftspligtige person efter momslovens almindelige hovedregel.
+    scope: [IMPORT]
+    legal_basis: ["ML § 66m", "Momssystemdirektivet art. 369l"]
+    parties:
+      - afgiftspligtig-person
+      - formidler
+    relationships:
+      - type: applies_to
+        target: betaling
+    implementation:
+      status: not_implemented
+      notes: "Requires Intermediary entity and payment service"
+
+  # ─────────────────────────────────────────────
+  # COMPLIANCE — RECORDS
+  # ─────────────────────────────────────────────
+
+  - id: regnskab
+    term: "Regnskab"
+    english: "Accounting records"
+    definition: |
+      De transaktionsoptegnelser, som den afgiftspligtige person (eller formidler)
+      skal føre for de leveringer, der er omfattet af en særordning.
+      Skal være tilstrækkelig detaljerede til at afgiftsmyndighederne kan
+      verificere momsangivelsens korrekthed. Skal opbevares i 10 år.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66h (Non-EU/EU)", "ML § 66r (Import)", "Momsforordningen art. 63c"]
+    retention_years: 10
+    required_fields:
+      - "Forbrugsmedlemsland"
+      - "Varebeskrivelse/ydelsestype og mængde"
+      - "Leveringsdato"
+      - "Afgiftspligtigt beløb + valuta"
+      - "Afgiftssats"
+      - "Skyldigt momsbeløb + valuta"
+      - "Betalingsdato og -størrelse"
+      - "Fakturaoplysninger (hvis faktura udstedt)"
+      - "[Import] Ordrenummer / entydigt transaktionsnummer"
+      - "[Import] Entydigt batchnummer"
+    access_rule: "Skal gøres elektronisk tilgængeligt for MSI og MSC på anmodning inden 20 dage"
+    relationships:
+      - type: maintained_by
+        target: afgiftspligtig-person
+      - type: supports_verification_of
+        target: afgiftsangivelse
+    implementation:
+      status: not_implemented
+      planned_service: "osm2-records-service"
+      gap_severity: high
+
+  - id: opbevaringsperiode
+    term: "Opbevaringsperiode"
+    english: "Retention period"
+    definition: |
+      Regnskaber skal opbevares i 10 år fra udgangen af det år, hvori
+      transaktionen fandt sted.
+    scope: [NON_EU, EU, IMPORT]
+    legal_basis: ["ML § 66h", "ML § 66r", "Momsforordningen art. 63c"]
+    duration_years: 10
+    relationships:
+      - type: governs
+        target: regnskab
+    implementation:
+      status: not_implemented
