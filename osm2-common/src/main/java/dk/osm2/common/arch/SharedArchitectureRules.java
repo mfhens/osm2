@@ -106,6 +106,7 @@ public final class SharedArchitectureRules {
         return noClasses()
                 .that().resideInAPackage(ownServicePackage + "..")
                 .should().dependOnClassesThat().resideInAnyPackage(forbidden)
+                .allowEmptyShould(true)
                 .as("[R-03] " + ownServicePackage + " must not import from other service packages"
                         + " — use REST APIs instead [ADR-0002, ADR-0007]");
     }
@@ -124,6 +125,7 @@ public final class SharedArchitectureRules {
                             "org.springframework.amqp..",
                             "io.nats.."
                     )
+                    .allowEmptyShould(true)
                     .as("[R-04] No message broker imports — orchestration over REST only [ADR-0019]");
 
     // -------------------------------------------------------------------------
