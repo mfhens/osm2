@@ -90,3 +90,14 @@ docs/site/
 # === Demo script runtime artifacts ===
 .demo-pids/
 .demo-logs/
+
+# === Semgrep — downloaded ruleset cache (auto-refreshed by semgrep-report.ps1) ===
+config/semgrep/p-*.yaml
+
+# === Semgrep — generated scan output ===
+reports/semgrep-report.json
+reports/semgrep-magic-strings.txt
+reports/semgrep-local.json
+reports/semgrep-stderr*.txt
+reports/semgrep*.sarif
+reports/semgrep-magic.json

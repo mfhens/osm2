@@ -1,0 +1,35 @@
+# Custom semgrep rules for osm2
+# Fires on every occurrence; post-processor (below) filters to >=3 repetitions.
+# $LITERAL captures the full Java string literal including surrounding quotes.
+
+rules:
+
+  - id: magic-string-assignment
+    message: Magic string $LITERAL in assignment -- extract to a named constant (flag at 3+ occurrences)
+    languages: [java]
+    severity: WARNING
+    patterns:
+      - pattern: $VAR = $LITERAL
+      - metavariable-regex:
+          metavariable: $LITERAL
+          regex: '^"[A-Za-z][A-Za-z0-9_\-\.]{2,}"$'
+
+  - id: magic-string-comparison
+    message: Magic string $LITERAL compared directly -- extract to a named constant (flag at 3+ occurrences)
+    languages: [java]
+    severity: WARNING
+    patterns:
+      - pattern: $X.equals($LITERAL)
+      - metavariable-regex:
+          metavariable: $LITERAL
+          regex: '^"[A-Za-z][A-Za-z0-9_\-\.]{2,}"$'
+
+  - id: magic-string-return
+    message: Magic string $LITERAL returned directly -- extract to a named constant (flag at 3+ occurrences)
+    languages: [java]
+    severity: WARNING
+    patterns:
+      - pattern: return $LITERAL;
+      - metavariable-regex:
+          metavariable: $LITERAL
+          regex: '^"[A-Za-z][A-Za-z0-9_\-\.]{2,}"$'

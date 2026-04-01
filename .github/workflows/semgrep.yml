@@ -1,0 +1,106 @@
+name: Semgrep
+
+# Runs on every PR and on a weekly schedule.
+# The build job in ci.yml gates merges; this job provides security scanning
+# and magic-string hygiene checks independently.
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 7 * * 1'   # Weekly — Monday 07:00 UTC
+
+permissions:
+  contents: read
+  security-events: write  # required for SARIF upload to GitHub Security tab
+
+jobs:
+  semgrep:
+    name: Semgrep Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
+
+      - name: Install semgrep
+        run: pip install semgrep --quiet
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      # ── p/java + p/secrets → SARIF → GitHub Security tab ─────────────────
+      - name: Semgrep scan (p/java + p/secrets)
+        run: |
+          set +e
+          semgrep \
+            --config p/java \
+            --config p/secrets \
+            --metrics=off \
+            --exclude target \
+            --exclude config/semgrep \
+            --sarif \
+            --output reports/semgrep.sarif
+          EXIT=$?
+          # semgrep exits 1 when findings exist — that is expected and non-fatal here;
+          # the SARIF upload surfaces findings in the Security tab.
+          # Only exit codes >=2 indicate a tool error.
+          if [ $EXIT -ge 2 ]; then exit $EXIT; fi
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: reports/semgrep.sarif
+          category: semgrep
+
+      # ── Custom magic-strings rule → threshold filter ───────────────────────
+      - name: Check magic strings (fail at ≥3 repetitions)
+        run: |
+          set +e
+          semgrep \
+            --config config/semgrep/magic-strings.yaml \
+            --metrics=off \
+            --exclude target \
+            --json \
+            --output reports/semgrep-magic.json
+          # exit code 1 = findings, 0 = clean; both are fine here — Python decides
+          EXIT=$?
+          if [ $EXIT -ge 2 ]; then exit $EXIT; fi
+
+          python3 << 'PYEOF'
+          import json, sys
+          from collections import Counter
+
+          with open('reports/semgrep-magic.json') as f:
+              data = json.load(f)
+
+          magic_ids = {'magic-string-assignment', 'magic-string-comparison', 'magic-string-return'}
+          hits = [r for r in data.get('results', [])
+                  if r['check_id'].split('.')[-1] in magic_ids]
+
+          counts = Counter()
+          for h in hits:
+              lit = (h.get('extra') or {}) \
+                        .get('metavars', {}) \
+                        .get('$LITERAL', {}) \
+                        .get('abstract_content', '')
+              if lit:
+                  counts[lit] += 1
+
+          violations = {k: v for k, v in counts.items() if v >= 3}
+          if violations:
+              print('::error::Magic string threshold violated (>=3 occurrences):')
+              for lit, n in sorted(violations.items(), key=lambda x: -x[1]):
+                  print(f'  {lit}: {n} occurrences — extract to a named constant')
+              sys.exit(1)
+
+          print(f'Magic string check passed. {len(hits)} hits recorded, none at threshold.')
+          PYEOF
+
+      - name: Upload scan artefacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: semgrep-reports
+          path: reports/semgrep*.{sarif,json}
+          retention-days: 30

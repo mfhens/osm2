@@ -124,13 +124,13 @@ public class RegistrationService {
         // Determine VAT number and initial status
         String vatNumber = null;
         RegistrantStatus initialStatus = RegistrantStatus.PENDING_VAT_NUMBER;
-        String initialRegStatus = "PENDING_VAT_NUMBER";
+        String initialRegStatus = initialStatus.name();
 
         if (request.existingDanishVatNumber() != null && "EU".equals(request.scheme())) {
             // EU scheme with existing DK VAT: pre-assign and activate immediately (ML § 66e stk. 2)
             vatNumber = request.existingDanishVatNumber();
             initialStatus = RegistrantStatus.ACTIVE;
-            initialRegStatus = "ACTIVE";
+            initialRegStatus = initialStatus.name();
         }
 
         // Determine binding period for EU scheme
