@@ -97,8 +97,8 @@ jobs:
       - name: SonarCloud Scan
         run: |
           mvn --batch-mode --no-transfer-progress verify sonar:sonar \
-            -Dsonar.projectKey=[TODO-SONAR-PROJECT-KEY] \
-            -Dsonar.organization=[TODO-SONAR-ORG] \
+            -Dsonar.projectKey=osm2 \
+            -Dsonar.organization=mfhens \
             -Dsonar.host.url=https://sonarcloud.io
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
