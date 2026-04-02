@@ -1,6 +1,6 @@
 # ci.yml - osm2 GitHub Actions CI pipeline
 # Triggers: push to any branch, pull_request to main
-# Release: on tag push matching v*.*.*
+# Release: see release.yml (triggered by v*.*.* tag push)
 #
 # Tool versions are declared in .mise.toml at the repo root.
 # jdx/mise-action reads that file and installs java, maven, and node
@@ -11,7 +11,6 @@ name: CI
 on:
   push:
     branches: ["**"]
-    tags: ["v*.*.*"]
   pull_request:
     branches: [main]
 
@@ -22,11 +21,48 @@ permissions:
 
 jobs:
   # -------------------------------------------------
+  # JOB: Validate (fast gate: format + C4 model)
+  # -------------------------------------------------
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
+
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - name: Cache Maven repository
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Check code formatting (Spotless)
+        run: mvn --batch-mode spotless:check
+
+      - name: Validate Maven project
+        run: mvn --batch-mode validate
+
+      - name: Validate C4 architecture model
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/architecture:/usr/local/structurizr \
+            structurizr/cli validate --workspace workspace.dsl
+
+  # -------------------------------------------------
   # JOB: Build and verify
   # -------------------------------------------------
   build:
     name: Build & Verify
     runs-on: ubuntu-latest
+    needs: validate
 
     steps:
       - name: Checkout
@@ -64,6 +100,72 @@ jobs:
           name: jacoco-reports
           path: "**/target/site/jacoco/"
           retention-days: 7
+
+  # -------------------------------------------------
+  # JOB: Integration tests (Cucumber ITs + Keycloak)
+  # -------------------------------------------------
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Start Keycloak
+        run: |
+          docker run -d --name keycloak \
+            -p 8080:8080 \
+            -e KEYCLOAK_ADMIN=admin \
+            -e KEYCLOAK_ADMIN_PASSWORD=admin \
+            -e KC_HEALTH_ENABLED=true \
+            quay.io/keycloak/keycloak:24.0 start-dev
+
+      - name: Wait for Keycloak
+        run: |
+          echo "Waiting for Keycloak to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health/ready > /dev/null 2>&1; then
+              echo "Keycloak is ready"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting 5s..."
+            sleep 5
+          done
+          echo "Keycloak failed to start"
+          docker logs keycloak
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
+
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - name: Cache Maven repository
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run integration tests
+        run: mvn --batch-mode --no-transfer-progress verify -P integration-tests
+        env:
+          KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/osm2
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: integration-test-results
+          path: "**/target/failsafe-reports/*.xml"
+          retention-days: 7
+
+      - name: Stop Keycloak
+        if: always()
+        run: docker stop keycloak && docker rm keycloak
 
   # -------------------------------------------------
   # JOB: SonarCloud analysis
@@ -160,75 +262,3 @@ jobs:
         uses: actions/dependency-review-action@da24e1d0a0919aff0e1a18913c48f22b88b24cfc  # v4
         with:
           fail-on-severity: high
-
-  # -------------------------------------------------
-  # JOB: Release (on tag)
-  # -------------------------------------------------
-  release:
-    name: Release & Docker Build
-    runs-on: ubuntu-latest
-    needs: [build, sonar, owasp]
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-      packages: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
-
-      - name: Install tools (mise)
-        uses: jdx/mise-action@v2
-        with:
-          cache: true
-
-      - name: Cache Maven repository
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-      - name: Set release version
-        run: mvn --batch-mode versions:set -DnewVersion=${{ steps.version.outputs.VERSION }} -DgenerateBackupPoms=false
-
-      - name: Build release artifacts
-        run: mvn --batch-mode --no-transfer-progress package -DskipTests
-
-      - name: Log in to container registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker images
-        run: |
-          IMAGE_TAG=${{ steps.version.outputs.VERSION }}
-          SHA_TAG=${GITHUB_SHA::8}
-          REGISTRY=ghcr.io/${{ github.repository_owner }}
-
-          for module in osm2-scheme-service osm2-registration-service osm2-return-service osm2-payment-service osm2-records-service osm2-taxable-person-portal osm2-authority-portal; do
-            IMAGE_NAME=${REGISTRY}/${module}
-            docker build \
-              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
-              --label "org.opencontainers.image.version=${IMAGE_TAG}" \
-              -t ${IMAGE_NAME}:${IMAGE_TAG} \
-              -t ${IMAGE_NAME}:${SHA_TAG} \
-              ./${module}
-            docker push ${IMAGE_NAME}:${IMAGE_TAG}
-            docker push ${IMAGE_NAME}:${SHA_TAG}
-          done
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create v${{ steps.version.outputs.VERSION }} \
-            --title "osm2 v${{ steps.version.outputs.VERSION }}" \
-            --generate-notes

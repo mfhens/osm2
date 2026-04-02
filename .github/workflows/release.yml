@@ -1,0 +1,94 @@
+# release.yml - osm2 release pipeline
+# Triggers: push of a v*.*.* tag, or manual workflow_dispatch
+#
+# Builds release artifacts, pushes Docker images to GHCR,
+# and creates a GitHub Release with auto-generated notes.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (without v prefix, e.g. 1.2.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Release & Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
+
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - name: Cache Maven repository
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Resolve release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set release version in Maven
+        run: mvn --batch-mode versions:set -DnewVersion=${{ steps.version.outputs.VERSION }} -DgenerateBackupPoms=false
+
+      - name: Build release artifacts
+        run: mvn --batch-mode --no-transfer-progress package -DskipTests
+
+      - name: Log in to container registry
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker images
+        run: |
+          IMAGE_TAG=${{ steps.version.outputs.VERSION }}
+          SHA_TAG=${GITHUB_SHA::8}
+          REGISTRY=ghcr.io/${{ github.repository_owner }}
+
+          for module in osm2-scheme-service osm2-registration-service osm2-return-service \
+                        osm2-payment-service osm2-records-service \
+                        osm2-taxable-person-portal osm2-authority-portal; do
+            IMAGE_NAME=${REGISTRY}/${module}
+            docker build \
+              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+              --label "org.opencontainers.image.version=${IMAGE_TAG}" \
+              -t ${IMAGE_NAME}:${IMAGE_TAG} \
+              -t ${IMAGE_NAME}:${SHA_TAG} \
+              ./${module}
+            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+            docker push ${IMAGE_NAME}:${SHA_TAG}
+          done
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v${{ steps.version.outputs.VERSION }} \
+            --title "osm2 v${{ steps.version.outputs.VERSION }}" \
+            --generate-notes
