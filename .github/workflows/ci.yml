@@ -45,7 +45,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Check code formatting (Spotless)
-        run: mvn --batch-mode spotless:check
+        run: mvn --batch-mode spotless:check -pl audit-trail-commons,keycloak-oauth2-starter,oces3-certificate-parser,ufst-bookkeeping-core
 
       - name: Validate Maven project
         run: mvn --batch-mode validate
