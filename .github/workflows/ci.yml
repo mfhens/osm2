@@ -199,7 +199,7 @@ jobs:
       - name: SonarCloud Scan
         run: |
           mvn --batch-mode --no-transfer-progress verify sonar:sonar \
-            -Dsonar.projectKey=osm2 \
+            -Dsonar.projectKey=mfhens_osm2 \
             -Dsonar.organization=mfhens \
             -Dsonar.host.url=https://sonarcloud.io
         env:
