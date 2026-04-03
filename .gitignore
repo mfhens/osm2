@@ -102,6 +102,9 @@ reports/semgrep-stderr*.txt
 reports/semgrep*.sarif
 reports/semgrep-magic.json
 
+# Basecamp — local project IDs (copy from .basecamp/config.example.json)
+.basecamp/config.json
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db

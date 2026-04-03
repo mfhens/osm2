@@ -1,0 +1,5 @@
+{
+  "_comment": "Copy to scripts/basecamp/card-map.json — Basecamp card recording IDs for petition rows (Sync-BeadsCommentsToBasecamp.ps1).",
+  "OSS-01": "REPLACE_WITH_CARD_RECORDING_ID",
+  "OSS-02": "REPLACE_WITH_CARD_RECORDING_ID"
+}

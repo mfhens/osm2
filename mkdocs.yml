@@ -68,6 +68,8 @@ nav:
     - "OSS-06 -- Records": petitions/OSS-06/OSS-06.md
   - References:
     - "DA16 -- Moms One Stop Shop": docs/references/DA16-moms-one-stop-shop.md
+  - Integrations:
+    - "Basecamp": docs/integrations/basecamp/README.md
   - Compliance:
     - "GDPR Register": compliance/gdpr-register.csv
 
