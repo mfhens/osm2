@@ -16,13 +16,17 @@ function Get-BasecampJsonData {
     if ($LASTEXITCODE -ne 0) { throw "basecamp failed: basecamp $($BcArgs -join ' ') — $out" }
     $o = $out | Out-String
     $parsed = $o | ConvertFrom-Json -Depth 50
-    if ($parsed.PSObject.Properties["data"]) { return @($parsed.data) }
-    return @($parsed)
+    $dataProp = $parsed.PSObject.Properties["data"]
+    if ($null -ne $dataProp -and $null -ne $dataProp.Value) {
+        return @($dataProp.Value)
+    }
+    return @()
 }
 
 function Find-CardForPetition {
     param($Cards, [string]$PetitionId)
     foreach ($c in $Cards) {
+        if ($null -eq $c) { continue }
         $t = [string]$c.title
         if ($t.TrimStart().StartsWith($PetitionId)) { return $c }
     }
