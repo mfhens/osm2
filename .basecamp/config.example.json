@@ -9,6 +9,7 @@
     "in_progress": "COLUMN_ID_IN_PROGRESS",
     "implemented": "COLUMN_ID_DONE",
     "blocked": "COLUMN_ID_BLOCKED",
+    "superseded": "COLUMN_ID_DONE",
     "default": "COLUMN_ID_BACKLOG_OR_DISCOVERY"
   }
 }

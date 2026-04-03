@@ -38,10 +38,16 @@ function Get-TargetColumnId {
     $cols = $Config.columns
     if (-not $cols) { throw "config.json missing ""columns"" map." }
     $key = $Status.ToLowerInvariant()
-    $cid = $cols.$key
-    if (-not $cid -and $cols.default) { return [string]$cols.default }
-    if (-not $cid) { throw "No column mapping for status '$Status' (and no columns.default)." }
-    return [string]$cid
+    $prop = $cols.PSObject.Properties[$key]
+    $cid = if ($null -ne $prop) { [string]$prop.Value } else { "" }
+    if ([string]::IsNullOrWhiteSpace($cid)) {
+        $defProp = $cols.PSObject.Properties["default"]
+        if ($null -ne $defProp -and -not [string]::IsNullOrWhiteSpace([string]$defProp.Value)) {
+            return [string]$defProp.Value
+        }
+        throw "No column mapping for status '$Status' (and no columns.default)."
+    }
+    return $cid
 }
 
 function Escape-Html {
