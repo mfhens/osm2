@@ -45,7 +45,7 @@ scope SchemeEligibilityOracle:
     if supply_type = SupplyType.ImportGoods then (
       if excisable then SchemeOutcome.ImportExcludedExcisable
       else if not shipment_value_known then SchemeOutcome.ImportShipmentValueRequired
-      else if shipment_value_eur > 150 then SchemeOutcome.ImportExcludedValueTooHigh
+      else if shipment_value_eur > 150.0 then SchemeOutcome.ImportExcludedValueTooHigh
       else SchemeOutcome.ImportScheme
     )
     else if supply_type = SupplyType.DistanceSalesIntraEu then (

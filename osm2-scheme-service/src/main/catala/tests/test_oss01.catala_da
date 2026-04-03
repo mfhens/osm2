@@ -15,7 +15,7 @@ scope TestImportExcisable:
   definition oss01.supply_type equals T.SupplyType.ImportGoods
   definition oss01.excisable equals true
   definition oss01.shipment_value_known equals true
-  definition oss01.shipment_value_eur equals 100
+  definition oss01.shipment_value_eur equals 100.0
   definition oss01.has_eu_seat equals false
   definition oss01.has_fixed_establishment_in_eu equals false
   definition oss01.consumption_is_other equals false
@@ -35,7 +35,7 @@ scope TestImportOver150:
   definition oss01.supply_type equals T.SupplyType.ImportGoods
   definition oss01.excisable equals false
   definition oss01.shipment_value_known equals true
-  definition oss01.shipment_value_eur equals 151
+  definition oss01.shipment_value_eur equals 151.0
   definition oss01.has_eu_seat equals false
   definition oss01.has_fixed_establishment_in_eu equals false
   definition oss01.consumption_is_other equals false
@@ -55,7 +55,7 @@ scope TestImportEligible150:
   definition oss01.supply_type equals T.SupplyType.ImportGoods
   definition oss01.excisable equals false
   definition oss01.shipment_value_known equals true
-  definition oss01.shipment_value_eur equals 150
+  definition oss01.shipment_value_eur equals 150.0
   definition oss01.has_eu_seat equals false
   definition oss01.has_fixed_establishment_in_eu equals false
   definition oss01.consumption_is_other equals false
@@ -79,7 +79,7 @@ scope TestNonEuServices:
   definition oss01.consumption_equals_seat_country equals false
   definition oss01.excisable equals false
   definition oss01.shipment_value_known equals false
-  definition oss01.shipment_value_eur equals 0
+  definition oss01.shipment_value_eur equals 0.0
   definition oss01.via_electronic_interface equals false
   assertion oss01.outcome = T.SchemeOutcome.NonEuScheme
 ```
@@ -99,7 +99,7 @@ scope TestEuSameCountryNoOss:
   definition oss01.consumption_equals_seat_country equals true
   definition oss01.excisable equals false
   definition oss01.shipment_value_known equals false
-  definition oss01.shipment_value_eur equals 0
+  definition oss01.shipment_value_eur equals 0.0
   definition oss01.via_electronic_interface equals false
   assertion oss01.outcome = T.SchemeOutcome.NoOssSchemeSameCountry
 ```
