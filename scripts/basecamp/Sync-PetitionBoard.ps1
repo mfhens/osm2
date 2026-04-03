@@ -1,4 +1,4 @@
-# Creates or updates Kanban cards for OSS petitions and moves them to columns by status (see .basecamp/config.example.json).
+# Creates or updates Kanban cards for petitions and moves them to columns by status (see .basecamp/config.example.json).
 #Requires -Version 5.1
 param(
     [switch]$DryRun
@@ -48,8 +48,9 @@ function Escape-Html {
     return $t
 }
 
-$repo = Get-Osm2RepoRoot
-$data = Get-ProgramStatusObject $repo
+$repo = Get-RepoRoot
+$raw = Get-ProgramStatusObject $repo
+$view = Get-ProgramView $raw
 $config = Get-BasecampConfig $repo
 $project = Resolve-BasecampProject $config
 $cardTable = [string]$config.card_table_id
@@ -61,7 +62,7 @@ if ($DryRun) {
     Write-Host "[dry-run] Read-only card list loaded ($($existing.Count) cards). No create/move will run." -ForegroundColor DarkGray
 }
 
-foreach ($p in @($data.petitions)) {
+foreach ($p in @($view.Petitions)) {
     $ossId = [string]$p.id
     $title = "$ossId — $($p.title)"
     $col = Get-TargetColumnId $config $p.status

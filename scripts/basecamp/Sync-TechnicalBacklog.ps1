@@ -30,12 +30,6 @@ function Find-TodoForTb {
     return $null
 }
 
-function Test-TbIsClosed {
-    param([string]$Status)
-    $s = $Status.ToLowerInvariant()
-    return ($s -eq "done" -or $s -eq "closed" -or $s -eq "implemented" -or $s -eq "wont_fix" -or $s -eq "superseded")
-}
-
 function Get-AllTodos {
     param([string]$Project)
     $inc = Get-BasecampJsonData @("todos", "list", "--in", $Project, "--json", "--all", "-s", "incomplete")
@@ -47,8 +41,9 @@ function Get-AllTodos {
     @($byId.Values)
 }
 
-$repo = Get-Osm2RepoRoot
-$data = Get-ProgramStatusObject $repo
+$repo = Get-RepoRoot
+$raw = Get-ProgramStatusObject $repo
+$view = Get-ProgramView $raw
 $config = Get-BasecampConfig $repo
 $project = Resolve-BasecampProject $config
 $listId = [string]$config.todolist_id
@@ -56,7 +51,7 @@ if (-not $listId) { throw "Set todolist_id in .basecamp/config.json (basecamp to
 
 $todos = Get-AllTodos $project
 
-foreach ($tb in @($data.technical_backlog)) {
+foreach ($tb in @($view.TechnicalBacklog)) {
     $tid = [string]$tb.id
     $line = "$tid — $($tb.title)"
     $todo = Find-TodoForTb $todos $tid

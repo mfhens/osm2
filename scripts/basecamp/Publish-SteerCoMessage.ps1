@@ -14,13 +14,14 @@ $Common = Join-Path $PSScriptRoot "Basecamp.Common.ps1"
 
 function Test-IsDonePetitionStatus {
     param([string]$Status)
+    if (-not $Status) { return $false }
     $s = $Status.ToLowerInvariant()
     return ($s -eq "implemented" -or $s -eq "validated")
 }
 
 function Get-CompletionMetrics {
-    param($ProgramStatus)
-    $petitions = @($ProgramStatus.petitions)
+    param($View)
+    $petitions = @($View.Petitions)
     $total = $petitions.Count
     $done = 0
     foreach ($p in $petitions) {
@@ -31,11 +32,11 @@ function Get-CompletionMetrics {
 }
 
 function Build-SteerCoMarkdown {
-    param($ProgramStatus)
+    param($View)
 
-    $prog = $ProgramStatus.program
-    $asOf = $ProgramStatus.last_updated
-    $metrics = Get-CompletionMetrics $ProgramStatus
+    $prog = $View.ProgramLabel
+    $asOf = $View.LastUpdated
+    $metrics = Get-CompletionMetrics $View
 
     $lines = [System.Collections.Generic.List[string]]::new()
     $lines.Add("**Program:** $prog  ")
@@ -43,12 +44,12 @@ function Build-SteerCoMarkdown {
     $lines.Add("")
     $lines.Add("## Executive summary")
     $lines.Add("- **Delivery:** $($metrics.Done) / $($metrics.Total) petitions complete ($($metrics.CompletionPct)%).")
-    $openTb = @($ProgramStatus.technical_backlog | Where-Object { $_.status -ne "done" -and $_.status -ne "closed" })
+    $openTb = @($View.TechnicalBacklog | Where-Object { -not (Test-TbIsClosed $_.status) })
     $lines.Add("- **Technical backlog (open):** $($openTb.Count) item(s).")
-    if ($ProgramStatus.critical_path -and $ProgramStatus.critical_path.Count -gt 0) {
+    if ($View.CriticalPath -and $View.CriticalPath.Count -gt 0) {
         $firstOpen = $null
-        foreach ($cid in @($ProgramStatus.critical_path)) {
-            $p = Get-PetitionById $ProgramStatus $cid
+        foreach ($cid in @($View.CriticalPath)) {
+            $p = Get-PetitionById $View $cid
             if ($p -and -not (Test-IsDonePetitionStatus $p.status)) {
                 $firstOpen = $cid
                 break
@@ -62,8 +63,8 @@ function Build-SteerCoMarkdown {
     }
     $lines.Add("")
     $lines.Add("## Delivery progress (by phase)")
-    if ($ProgramStatus.phases -and $ProgramStatus.phases.Count -gt 0) {
-        foreach ($ph in @($ProgramStatus.phases)) {
+    if ($View.Phases -and $View.Phases.Count -gt 0) {
+        foreach ($ph in @($View.Phases)) {
             $lines.Add("")
             $lines.Add("### $($ph.name)")
             if ($ph.objective) {
@@ -73,7 +74,7 @@ function Build-SteerCoMarkdown {
             $lines.Add("| Petition | Status |")
             $lines.Add("| --- | --- |")
             foreach ($ossId in @($ph.petitions)) {
-                $p = Get-PetitionById $ProgramStatus $ossId
+                $p = Get-PetitionById $View $ossId
                 $st = if ($p) { $p.status } else { "?" }
                 $lines.Add("| $ossId | $st |")
             }
@@ -82,14 +83,14 @@ function Build-SteerCoMarkdown {
         $lines.Add("")
         $lines.Add("| Petition | Status |")
         $lines.Add("| --- | --- |")
-        foreach ($p in @($ProgramStatus.petitions)) {
+        foreach ($p in @($View.Petitions)) {
             $lines.Add("| $($p.id) | $($p.status) |")
         }
     }
     $lines.Add("")
     $lines.Add("## Critical path")
-    if ($ProgramStatus.critical_path -and $ProgramStatus.critical_path.Count -gt 0) {
-        foreach ($c in @($ProgramStatus.critical_path)) {
+    if ($View.CriticalPath -and $View.CriticalPath.Count -gt 0) {
+        foreach ($c in @($View.CriticalPath)) {
             $lines.Add("- $c")
         }
     } else {
@@ -100,7 +101,7 @@ function Build-SteerCoMarkdown {
     $lines.Add("| Petition | Next step |")
     $lines.Add("| --- | --- |")
     $any = $false
-    foreach ($p in @($ProgramStatus.petitions)) {
+    foreach ($p in @($View.Petitions)) {
         if (Test-IsDonePetitionStatus $p.status) { continue }
         if (-not $p.next_step) { continue }
         $any = $true
@@ -113,13 +114,13 @@ function Build-SteerCoMarkdown {
     }
     $lines.Add("")
     $lines.Add("## Risks, blockers, escalations")
-    $blocked = @($ProgramStatus.petitions | Where-Object { $_.status -eq "blocked" })
+    $blocked = @($View.Petitions | Where-Object { $_.status -eq "blocked" })
     if ($blocked.Count -gt 0) {
-        $lines.Add("**Blocked petitions:** " + ($blocked.id -join ", "))
+        $lines.Add("**Blocked petitions:** " + (($blocked | ForEach-Object { $_.id }) -join ", "))
     } else {
         $lines.Add("**Blocked petitions:** none recorded.")
     }
-    $esc = $ProgramStatus.escalations
+    $esc = $View.Escalations
     if ($null -eq $esc) { $esc = @() }
     if ($esc.Count -eq 0) {
         $lines.Add("**Escalations:** none.")
@@ -130,6 +131,11 @@ function Build-SteerCoMarkdown {
                 $lines.Add("- $e")
             } elseif ($e.PSObject.Properties["summary"]) {
                 $lines.Add("- $($e.summary)")
+            } elseif ($e.PSObject.Properties["id"] -and $e.PSObject.Properties["reason"]) {
+                $rid = $e.id
+                $rsn = [string]$e.reason
+                if ($rsn.Length -gt 500) { $rsn = $rsn.Substring(0, 497) + "..." }
+                $lines.Add("- **${rid}:** $rsn")
             } else {
                 $lines.Add("- $($e | ConvertTo-Json -Compress -Depth 3)")
             }
@@ -140,12 +146,12 @@ function Build-SteerCoMarkdown {
     $lines.Add("Review recent changes under ``architecture/adr/`` (e.g. ``git log -n 5 --oneline architecture/adr``).")
     $lines.Add("")
     $lines.Add("## Technical backlog")
-    if (@($ProgramStatus.technical_backlog).Count -eq 0) {
+    if (@($View.TechnicalBacklog).Count -eq 0) {
         $lines.Add("*(none)*")
     } else {
         $lines.Add("| ID | Title | Status |")
         $lines.Add("| --- | --- | --- |")
-        foreach ($t in @($ProgramStatus.technical_backlog)) {
+        foreach ($t in @($View.TechnicalBacklog)) {
             $title = [string]$t.title
             $title = $title.Replace("|", "\|")
             $lines.Add("| $($t.id) | $title | $($t.status) |")
@@ -154,7 +160,7 @@ function Build-SteerCoMarkdown {
     $lines.Add("")
     $lines.Add("## Next actions (imperative)")
     $n = 0
-    foreach ($p in @($ProgramStatus.petitions)) {
+    foreach ($p in @($View.Petitions)) {
         if (Test-IsDonePetitionStatus $p.status) { continue }
         if ($p.next_step -and $n -lt 5) {
             $lines.Add("- **$($p.id):** $($p.next_step)")
@@ -173,10 +179,11 @@ function Build-SteerCoMarkdown {
     $lines -join "`n"
 }
 
-$repo = Get-Osm2RepoRoot
-$data = Get-ProgramStatusObject $repo
-$body = Build-SteerCoMarkdown $data
-$title = "$($data.program) — SteerCo digest ($($data.last_updated))"
+$repo = Get-RepoRoot
+$raw = Get-ProgramStatusObject $repo
+$view = Get-ProgramView $raw
+$body = Build-SteerCoMarkdown $view
+$title = "$($view.ProgramLabel) — SteerCo digest ($($view.LastUpdated))"
 
 if ($DryRun) {
     Write-Host "TITLE: $title" -ForegroundColor Cyan

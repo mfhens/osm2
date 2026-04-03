@@ -16,7 +16,7 @@ $ErrorActionPreference = "Stop"
 $Common = Join-Path $PSScriptRoot "Basecamp.Common.ps1"
 . $Common
 
-$repo = Get-Osm2RepoRoot
+$repo = Get-RepoRoot
 $config = Get-BasecampConfig $repo
 $project = Resolve-BasecampProject $config
 

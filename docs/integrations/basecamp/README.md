@@ -2,6 +2,8 @@
 
 Stakeholder-facing mirror of **`petitions/program-status.yaml`**, Beads, and ADRs in Basecamp — without duplicating canonical truth in Basecamp.
 
+The same **`scripts/basecamp/`** layout is shared with **OpenDebt**; `Basecamp.Common.ps1` normalizes **osm2** flat YAML (`program: osm2`, `petitions` as a list) and **opendebt** nested YAML (`program.name`, `petitions` as a map).
+
 ## Principles
 
 1. **Repo + Beads stay authoritative.** Basecamp is for readability, assignment, and discussion.
