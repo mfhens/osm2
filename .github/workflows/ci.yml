@@ -78,15 +78,18 @@ jobs:
       - name: Typecheck Catala compliance files
         # catala typecheck accepts exactly one file per invocation.
         # --language en: treat surface syntax as English (--no-stdlib: no Stdlib_en dependency).
+        # -I: module lookup for test files that `Using` Oss01/Oss02 (see parser_driver expand_includes).
         run: |
           eval $(opam env)
           catala typecheck --language en --no-stdlib \
-            osm2-scheme-service/src/main/catala/oss01.catala_da
+            osm2-scheme-service/src/main/catala/Oss01.catala_en
           catala typecheck --language en --no-stdlib \
+            -I osm2-scheme-service/src/main/catala \
             osm2-scheme-service/src/main/catala/tests/test_oss01.catala_da
           catala typecheck --language en --no-stdlib \
-            osm2-registration-service/src/main/catala/oss02.catala_da
+            osm2-registration-service/src/main/catala/Oss02.catala_en
           catala typecheck --language en --no-stdlib \
+            -I osm2-registration-service/src/main/catala \
             osm2-registration-service/src/main/catala/tests/test_oss02.catala_da
 
       - name: Run Catala test scopes (interpret)
@@ -94,11 +97,15 @@ jobs:
           eval $(opam env)
           for scope in TestImportExcisable TestImportOver150 TestImportEligible150 \
                        TestNonEuServices TestEuSameCountryNoOss; do
-            catala interpret --language en --no-stdlib --scope "$scope" \
+            catala interpret --language en --no-stdlib \
+              -I osm2-scheme-service/src/main/catala \
+              --scope "$scope" \
               osm2-scheme-service/src/main/catala/tests/test_oss01.catala_da
           done
           for scope in TestEarlyDeliveryApplies TestEarlyDeliveryNotApplies TestBindingEndYear; do
-            catala interpret --language en --no-stdlib --scope "$scope" \
+            catala interpret --language en --no-stdlib \
+              -I osm2-registration-service/src/main/catala \
+              --scope "$scope" \
               osm2-registration-service/src/main/catala/tests/test_oss02.catala_da
           done
 

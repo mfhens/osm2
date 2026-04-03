@@ -93,7 +93,7 @@ petitions:
       - "Forordning 904/2010 artikler 47a-47l"
       - "Lov nr. 810 af 9. juni 2020"
     catala_files:
-      - osm2-scheme-service/src/main/catala/oss01.catala_da
+      - osm2-scheme-service/src/main/catala/Oss01.catala_en
       - osm2-scheme-service/src/main/catala/tests/test_oss01.catala_da
     notes: >
       Covers scheme eligibility determination, all formal definitions, and legal hierarchy
@@ -125,7 +125,7 @@ petitions:
       - "Direktiv 2017/2455"
       - "Direktiv 2019/1995"
     catala_files:
-      - osm2-registration-service/src/main/catala/oss02.catala_da
+      - osm2-registration-service/src/main/catala/Oss02.catala_en
       - osm2-registration-service/src/main/catala/tests/test_oss02.catala_da
     notes: >
       Covers full registration lifecycle for Non-EU and EU schemes.
