@@ -101,3 +101,8 @@ reports/semgrep-local.json
 reports/semgrep-stderr*.txt
 reports/semgrep*.sarif
 reports/semgrep-magic.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
