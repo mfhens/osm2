@@ -5,14 +5,67 @@
 #   petitions: list of petition delivery records (populated by backlog-planner)
 #   legal_footprint: true if the petition encodes statute-backed rules (Catala-eligible per catala-encoder Phase 1)
 #   catala_files: optional paths to .catala_da oracle sources and tests (catala-encoder)
+#   phase: integer delivery wave (backlog-planner); aligns with phases[] below
+#   depends_on: petition IDs that must complete before this petition starts (backlog-planner)
+#   next_step: steering / SteerCo — concrete next action while not done (steerco-presentation)
 #   technical_backlog: list of TB-* technical backlog items (populated by tech-debt-executor)
+#   phases: phase definitions — petition lists and SteerCo delivery-progress tables
+#   critical_path: ordered backbone petition IDs for program success (steerco-presentation)
+#   escalations: open blockers raised by agents (see AGENTS.md / pipeline agents)
+
+schema_version: 1
 
 program: osm2
 last_updated: "2026-04-03"
 
+# Delivery phases (SteerCo + backlog-planner). Petition may appear in exactly one phase.
+phases:
+  - id: phase-1
+    name: "Foundation — scheme classification"
+    objective: Establish OSS scheme eligibility and shared definitions for all downstream work.
+    petitions:
+      - OSS-01
+
+  - id: phase-2
+    name: "Registration — Non-EU, EU, and Import"
+    objective: Complete registration lifecycles for all three OSS schemes.
+    petitions:
+      - OSS-02
+      - OSS-03
+
+  - id: phase-3
+    name: "VAT returns and corrections"
+    objective: Return filing and correction windows across schemes.
+    petitions:
+      - OSS-04
+
+  - id: phase-4
+    name: "Payment and recovery"
+    objective: Payments, refunds, reminders, joint liability coordination.
+    petitions:
+      - OSS-05
+
+  - id: phase-5
+    name: "Records and retention"
+    objective: Statutory record-keeping and accessibility.
+    petitions:
+      - OSS-06
+
+# End-to-end backbone (steerco-presentation critical-path slide). Parallel work still uses depends_on.
+critical_path:
+  - OSS-01
+  - OSS-02
+  - OSS-03
+  - OSS-04
+  - OSS-05
+  - OSS-06
+
 petitions:
   - id: OSS-01
     title: "Juridisk grundlag, skemavurdering og definitioner"
+    phase: 1
+    depends_on: []
+    next_step: "Optional: mark validated/released when release-manager promotes scheme-service; maintain Catala/Drools parity on ML changes."
     legal_footprint: true
     status: implemented
     created: "2026-03-30"
@@ -50,6 +103,10 @@ petitions:
 
   - id: OSS-02
     title: "Registrering og afmeldelse — Ikke-EU-ordning og EU-ordning"
+    phase: 2
+    depends_on:
+      - OSS-01
+    next_step: "Optional: validated/released with registration-service cutover; keep state machine aligned with ML §§ 66b–66j."
     legal_footprint: true
     status: implemented
     created: "2026-03-30"
@@ -77,6 +134,10 @@ petitions:
 
   - id: OSS-03
     title: "Registrering og afmeldelse — Importordning"
+    phase: 2
+    depends_on:
+      - OSS-01
+    next_step: "Promote draft to requirements/in_progress; lock intermediary + joint liability model with concept_model (Formidler) before build."
     legal_footprint: true
     status: draft
     created: "2026-03-30"
@@ -100,6 +161,12 @@ petitions:
 
   - id: OSS-04
     title: "Momsangivelse og korrektioner"
+    phase: 3
+    depends_on:
+      - OSS-01
+      - OSS-02
+      - OSS-03
+    next_step: "Complete solution/specs for osm2-return-service; resolve ECB-rate and correction-window edge cases in BDD before implementation."
     legal_footprint: true
     status: requirements
     created: "2026-03-31"
@@ -124,6 +191,10 @@ petitions:
 
   - id: OSS-05
     title: "Betaling, refusion og rykkere"
+    phase: 4
+    depends_on:
+      - OSS-04
+    next_step: "Await OSS-04 return core; define payment boundaries, joint liability hooks to Import (OSS-03), and ECB enforcement tests."
     legal_footprint: true
     status: draft
     created: "2026-03-30"
@@ -146,6 +217,14 @@ petitions:
 
   - id: OSS-06
     title: "Regnskab og dokumentation"
+    phase: 5
+    depends_on:
+      - OSS-01
+      - OSS-02
+      - OSS-03
+      - OSS-04
+      - OSS-05
+    next_step: "After OSS-05 design stable; specify hot-storage + per-item retrieval for 10-year retention vs OSS-02/03/04 data contracts."
     legal_footprint: true
     status: draft
     created: "2026-03-30"
@@ -218,3 +297,6 @@ technical_backlog:
     priority: medium
     created: "2026-04-01"
     blocking: []
+
+# Open agent-raised blockers (pipeline, reviews, Catala, release, …). Empty = none.
+escalations: []
