@@ -6,6 +6,20 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Native command output (e.g. python → JSON) must be decoded as UTF-8 on Windows; otherwise
+# YAML/em dash/Danish letters from program-status.yaml become mojibake in Basecamp.
+function Use-ConsoleUtf8 {
+    param([ScriptBlock]$Script)
+    $utf8 = [System.Text.UTF8Encoding]::new($false)
+    $prevOut = [Console]::OutputEncoding
+    try {
+        [Console]::OutputEncoding = $utf8
+        & $Script
+    } finally {
+        [Console]::OutputEncoding = $prevOut
+    }
+}
+
 function Get-RepoRoot {
     $here = $PSScriptRoot
     while ($here) {
@@ -22,7 +36,10 @@ function Get-ProgramStatusObject {
     param([string]$RepoRoot)
     $py = Join-Path $PSScriptRoot "read_program_status.py"
     if (-not (Test-Path $py)) { throw "Missing $py" }
-    $json = & python $py 2>&1
+    $json = Use-ConsoleUtf8 {
+        $env:PYTHONUTF8 = "1"
+        & python $py 2>$null
+    }
     if ($LASTEXITCODE -ne 0) { throw "read_program_status.py failed: $json" }
     $json | ConvertFrom-Json -Depth 50
 }
@@ -100,10 +117,27 @@ function Resolve-BasecampProject {
 
 function Invoke-Basecamp {
     param([string[]]$Arguments)
-    & basecamp @Arguments
+    Use-ConsoleUtf8 {
+        & basecamp @Arguments
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "basecamp failed ($LASTEXITCODE): basecamp $($Arguments -join ' ')"
     }
+}
+
+function Get-BasecampJsonData {
+    param([string[]]$BcArgs)
+    $out = Use-ConsoleUtf8 {
+        & basecamp @BcArgs 2>&1
+    }
+    if ($LASTEXITCODE -ne 0) { throw "basecamp failed: basecamp $($BcArgs -join ' ') — $out" }
+    $o = $out | Out-String
+    $parsed = $o | ConvertFrom-Json -Depth 50
+    $dataProp = $parsed.PSObject.Properties["data"]
+    if ($null -ne $dataProp -and $null -ne $dataProp.Value) {
+        return @($dataProp.Value)
+    }
+    return @()
 }
 
 function Get-CardColumnId {

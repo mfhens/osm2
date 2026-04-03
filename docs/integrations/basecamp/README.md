@@ -22,6 +22,8 @@ The same **`scripts/basecamp/`** layout is shared with **OpenDebt**; `Basecamp.C
 
 Optional: set **`BASECAMP_PROJECT`** instead of `project_id` in CI or local shells.
 
+On **Windows**, PowerShell decodes native program output using **`[Console]::OutputEncoding`**. `Basecamp.Common.ps1` sets **UTF-8** while running **Python** (program-status JSON) and the **basecamp** CLI so Danish letters, **§**, and **—** are not corrupted in card titles and messages.
+
 ## Scripts (`scripts/basecamp/`)
 
 | Script | Purpose |

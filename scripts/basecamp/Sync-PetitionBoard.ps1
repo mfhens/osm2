@@ -10,19 +10,6 @@ $ErrorActionPreference = "Stop"
 $Common = Join-Path $PSScriptRoot "Basecamp.Common.ps1"
 . $Common
 
-function Get-BasecampJsonData {
-    param([string[]]$BcArgs)
-    $out = & basecamp @BcArgs 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "basecamp failed: basecamp $($BcArgs -join ' ') — $out" }
-    $o = $out | Out-String
-    $parsed = $o | ConvertFrom-Json -Depth 50
-    $dataProp = $parsed.PSObject.Properties["data"]
-    if ($null -ne $dataProp -and $null -ne $dataProp.Value) {
-        return @($dataProp.Value)
-    }
-    return @()
-}
-
 function Find-CardForPetition {
     param($Cards, [string]$PetitionId)
     foreach ($c in $Cards) {
