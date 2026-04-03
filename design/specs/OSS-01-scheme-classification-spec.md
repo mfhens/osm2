@@ -25,7 +25,7 @@ This specification covers exactly what is stated in petition OSS-01 and its outc
 | Legal basis | Every `SchemeClassificationResult` must carry at least one entry in `legalBasis`. Format: `"ML § <para> / MSD artikel <art>"`. |
 | Technology | Java 21, Spring Boot 3.5.0, Drools 9.44.0.Final, Maven multi-module. |
 | ADR-0031 | `SchemeType` enum codes are `NON_EU`, `EU`, `IMPORT` — statutory, do not rename. |
-| ADR-0032 | Drools is the runtime engine. Catala is offline oracle and is **not** in the Maven build. |
+| ADR-0032 | Drools is the runtime engine. Catala is the formal oracle, **typechecked in CI**; it is **not** invoked by `mvn verify`. |
 | ADR-0004 | API-first. All endpoints must be documented with OpenAPI annotations. |
 
 ---
@@ -562,7 +562,7 @@ The following are explicitly out of scope for OSS-01 and must not be implemented
 | UI or Thymeleaf templates | OSS-01 is API-only |
 | Cross-service database calls | No cross-service integration in OSS-01 |
 | `AuditableEntity` on DTOs | DTOs are records, not JPA entities |
-| Catala in Maven build | ADR-0032: Catala is offline oracle only |
+| Catala in Maven build | ADR-0032: Catala is **not** in Maven; validation is **CI** (`catala typecheck` / tests). |
 | Reference table reads during classify | `scheme_type` and `eligibility_rule` tables are not read during stateless classification |
 | Any FR beyond OSS-01.md | Strict traceability enforced |
 

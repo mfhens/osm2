@@ -1,0 +1,39 @@
+# OSS-02 — Registrering (udvalgte ML-regler)
+
+> Module Oss02
+
+Formaliseret udkast til dele af ML §§ 66b, 66e og ML § 66d (bindingsperiode) som de
+ses i petition OSS-02. Fuld kalenderlogik (kvartalsgrænser, 10-dagesfrist i kalenderdage)
+kræver supplerende datointervaller — her: boolsk tidlig-leverance undtagelse og
+heltalsår for bindingsperiodens udløb (FR-OSS-02-020–022).
+
+Kørsel: `catala typecheck --language en --no-stdlib`.
+
+```catala-metadata
+declaration scope EarlyDeliveryException:
+  input has_first_eligible_delivery content boolean
+  input notification_on_or_before_tenth_of_month_after_first_delivery content boolean
+  output use_first_delivery_date_as_effective content boolean
+
+declaration scope EuBindingPeriodEnd:
+  input calendar_year_of_identification_choice content integer
+  output binding_period_end_year content integer
+```
+
+## Tidlig leverance — ML § 66b stk. 3 / § 66e stk. 2 (jf. FR-OSS-02-003–005, 007–008)
+
+```catala
+scope EarlyDeliveryException:
+  definition use_first_delivery_date_as_effective equals
+    has_first_eligible_delivery
+    and notification_on_or_before_tenth_of_month_after_first_delivery
+```
+
+## EU-bindingsperiode — slutår (ML § 66d stk. 1 nr. 2, FR-OSS-02-020–022)
+
+Kalenderåret for 31. december i det sidste af de tre år (valgår + 2 efterfølgende).
+
+```catala
+scope EuBindingPeriodEnd:
+  definition binding_period_end_year equals calendar_year_of_identification_choice + 2
+```

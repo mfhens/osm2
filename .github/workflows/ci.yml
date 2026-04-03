@@ -57,12 +57,58 @@ jobs:
             structurizr/cli validate --workspace workspace.dsl
 
   # -------------------------------------------------
+  # JOB: Catala (formal oracle — ADR-0032; mirrors opendebt CI)
+  # -------------------------------------------------
+  catala-tests:
+    name: Catala Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "4.14.2"
+
+      - name: Install Catala 1.1.0
+        run: opam install catala.1.1.0 -y
+
+      - name: Typecheck Catala compliance files
+        # catala typecheck accepts exactly one file per invocation.
+        # --language en: treat surface syntax as English (--no-stdlib: no Stdlib_en dependency).
+        run: |
+          eval $(opam env)
+          catala typecheck --language en --no-stdlib \
+            osm2-scheme-service/src/main/catala/oss01.catala_da
+          catala typecheck --language en --no-stdlib \
+            osm2-scheme-service/src/main/catala/tests/test_oss01.catala_da
+          catala typecheck --language en --no-stdlib \
+            osm2-registration-service/src/main/catala/oss02.catala_da
+          catala typecheck --language en --no-stdlib \
+            osm2-registration-service/src/main/catala/tests/test_oss02.catala_da
+
+      - name: Run Catala test scopes (interpret)
+        run: |
+          eval $(opam env)
+          for scope in TestImportExcisable TestImportOver150 TestImportEligible150 \
+                       TestNonEuServices TestEuSameCountryNoOss; do
+            catala interpret --language en --no-stdlib --scope "$scope" \
+              osm2-scheme-service/src/main/catala/tests/test_oss01.catala_da
+          done
+          for scope in TestEarlyDeliveryApplies TestEarlyDeliveryNotApplies TestBindingEndYear; do
+            catala interpret --language en --no-stdlib --scope "$scope" \
+              osm2-registration-service/src/main/catala/tests/test_oss02.catala_da
+          done
+
+  # -------------------------------------------------
   # JOB: Build and verify
   # -------------------------------------------------
   build:
     name: Build & Verify
     runs-on: ubuntu-latest
-    needs: validate
+    needs: [validate, catala-tests]
 
     steps:
       - name: Checkout

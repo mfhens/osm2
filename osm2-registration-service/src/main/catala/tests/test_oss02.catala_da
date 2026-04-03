@@ -1,0 +1,43 @@
+# Tests — OSS-02 EarlyDeliveryException og EuBindingPeriodEnd
+
+> Include: ../oss02.catala_da
+
+> Using Oss02 as T
+
+### Tidlig leverance gælder
+
+```catala
+#[test]
+declaration scope TestEarlyDeliveryApplies:
+  oss02 scope T.EarlyDeliveryException
+
+scope TestEarlyDeliveryApplies:
+  definition oss02.has_first_eligible_delivery equals true
+  definition oss02.notification_on_or_before_tenth_of_month_after_first_delivery equals true
+  assertion oss02.use_first_delivery_date_as_effective = true
+```
+
+### Tidlig leverance gælder ikke
+
+```catala
+#[test]
+declaration scope TestEarlyDeliveryNotApplies:
+  oss02 scope T.EarlyDeliveryException
+
+scope TestEarlyDeliveryNotApplies:
+  definition oss02.has_first_eligible_delivery equals true
+  definition oss02.notification_on_or_before_tenth_of_month_after_first_delivery equals false
+  assertion oss02.use_first_delivery_date_as_effective = false
+```
+
+### Bindingsperiode slutår: valgår 2026 → 2028
+
+```catala
+#[test]
+declaration scope TestBindingEndYear:
+  oss02 scope T.EuBindingPeriodEnd
+
+scope TestBindingEndYear:
+  definition oss02.calendar_year_of_identification_choice equals 2026
+  assertion oss02.binding_period_end_year = 2028
+```

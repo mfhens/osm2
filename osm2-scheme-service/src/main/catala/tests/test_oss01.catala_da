@@ -1,0 +1,105 @@
+# Tests — OSS-01 SchemeEligibilityOracle
+
+> Include: ../oss01.catala_da
+
+> Using Oss01 as T
+
+### Import — AC-09 punktafgiftsvarer
+
+```catala
+#[test]
+declaration scope TestImportExcisable:
+  oss01 scope T.SchemeEligibilityOracle
+
+scope TestImportExcisable:
+  definition oss01.supply_type equals T.SupplyType.ImportGoods
+  definition oss01.excisable equals true
+  definition oss01.shipment_value_known equals true
+  definition oss01.shipment_value_eur equals 100
+  definition oss01.has_eu_seat equals false
+  definition oss01.has_fixed_establishment_in_eu equals false
+  definition oss01.consumption_is_other equals false
+  definition oss01.consumption_equals_seat_country equals false
+  definition oss01.via_electronic_interface equals false
+  assertion oss01.outcome = T.SchemeOutcome.ImportExcludedExcisable
+```
+
+### Import — AC-07 værdi over 150 EUR
+
+```catala
+#[test]
+declaration scope TestImportOver150:
+  oss01 scope T.SchemeEligibilityOracle
+
+scope TestImportOver150:
+  definition oss01.supply_type equals T.SupplyType.ImportGoods
+  definition oss01.excisable equals false
+  definition oss01.shipment_value_known equals true
+  definition oss01.shipment_value_eur equals 151
+  definition oss01.has_eu_seat equals false
+  definition oss01.has_fixed_establishment_in_eu equals false
+  definition oss01.consumption_is_other equals false
+  definition oss01.consumption_equals_seat_country equals false
+  definition oss01.via_electronic_interface equals false
+  assertion oss01.outcome = T.SchemeOutcome.ImportExcludedValueTooHigh
+```
+
+### Import — AC-06/08 inden for eller lig 150 EUR
+
+```catala
+#[test]
+declaration scope TestImportEligible150:
+  oss01 scope T.SchemeEligibilityOracle
+
+scope TestImportEligible150:
+  definition oss01.supply_type equals T.SupplyType.ImportGoods
+  definition oss01.excisable equals false
+  definition oss01.shipment_value_known equals true
+  definition oss01.shipment_value_eur equals 150
+  definition oss01.has_eu_seat equals false
+  definition oss01.has_fixed_establishment_in_eu equals false
+  definition oss01.consumption_is_other equals false
+  definition oss01.consumption_equals_seat_country equals false
+  definition oss01.via_electronic_interface equals false
+  assertion oss01.outcome = T.SchemeOutcome.ImportScheme
+```
+
+### Ikke-EU — AC-01 ydelser, intet EU-hjemsted eller FE
+
+```catala
+#[test]
+declaration scope TestNonEuServices:
+  oss01 scope T.SchemeEligibilityOracle
+
+scope TestNonEuServices:
+  definition oss01.supply_type equals T.SupplyType.Services
+  definition oss01.has_eu_seat equals false
+  definition oss01.has_fixed_establishment_in_eu equals false
+  definition oss01.consumption_is_other equals false
+  definition oss01.consumption_equals_seat_country equals false
+  definition oss01.excisable equals false
+  definition oss01.shipment_value_known equals false
+  definition oss01.shipment_value_eur equals 0
+  definition oss01.via_electronic_interface equals false
+  assertion oss01.outcome = T.SchemeOutcome.NonEuScheme
+```
+
+### EU — AC-05 samme land som forbrugssted
+
+```catala
+#[test]
+declaration scope TestEuSameCountryNoOss:
+  oss01 scope T.SchemeEligibilityOracle
+
+scope TestEuSameCountryNoOss:
+  definition oss01.supply_type equals T.SupplyType.Services
+  definition oss01.has_eu_seat equals true
+  definition oss01.has_fixed_establishment_in_eu equals false
+  definition oss01.consumption_is_other equals false
+  definition oss01.consumption_equals_seat_country equals true
+  definition oss01.excisable equals false
+  definition oss01.shipment_value_known equals false
+  definition oss01.shipment_value_eur equals 0
+  definition oss01.via_electronic_interface equals false
+  assertion oss01.outcome = T.SchemeOutcome.NoOssSchemeSameCountry
+```

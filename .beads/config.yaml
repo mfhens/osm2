@@ -52,3 +52,6 @@
 # - linear.api-key
 # - github.org
 # - github.repo
+
+# Dolt database name (matches bd init / issue prefix for this repo)
+dolt.database: "osm2"

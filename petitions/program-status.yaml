@@ -3,14 +3,17 @@
 # Do not edit manually unless correcting a tracking error.
 # Fields:
 #   petitions: list of petition delivery records (populated by backlog-planner)
+#   legal_footprint: true if the petition encodes statute-backed rules (Catala-eligible per catala-encoder Phase 1)
+#   catala_files: optional paths to .catala_da oracle sources and tests (catala-encoder)
 #   technical_backlog: list of TB-* technical backlog items (populated by tech-debt-executor)
 
 program: osm2
-last_updated: "2026-05-21"
+last_updated: "2026-04-03"
 
 petitions:
   - id: OSS-01
     title: "Juridisk grundlag, skemavurdering og definitioner"
+    legal_footprint: true
     status: implemented
     created: "2026-03-30"
     implemented: "2026-05-21"
@@ -36,6 +39,9 @@ petitions:
       - "Direktiv 2019/1995"
       - "Forordning 904/2010 artikler 47a-47l"
       - "Lov nr. 810 af 9. juni 2020"
+    catala_files:
+      - osm2-scheme-service/src/main/catala/oss01.catala_da
+      - osm2-scheme-service/src/main/catala/tests/test_oss01.catala_da
     notes: >
       Covers scheme eligibility determination, all formal definitions, and legal hierarchy
       (Ikke-EU-ordning, EU-ordning, Importordning). Establishes the foundational classification
@@ -44,6 +50,7 @@ petitions:
 
   - id: OSS-02
     title: "Registrering og afmeldelse — Ikke-EU-ordning og EU-ordning"
+    legal_footprint: true
     status: implemented
     created: "2026-03-30"
     implemented: "2026-05-21"
@@ -60,6 +67,9 @@ petitions:
       - "Momsforordningen artikler 57d–58c"
       - "Direktiv 2017/2455"
       - "Direktiv 2019/1995"
+    catala_files:
+      - osm2-registration-service/src/main/catala/oss02.catala_da
+      - osm2-registration-service/src/main/catala/tests/test_oss02.catala_da
     notes: >
       Covers full registration lifecycle for Non-EU and EU schemes.
       EU binding rule (current year + 2) enforced as explicit state-machine constraint.
@@ -67,6 +77,7 @@ petitions:
 
   - id: OSS-03
     title: "Registrering og afmeldelse — Importordning"
+    legal_footprint: true
     status: draft
     created: "2026-03-30"
     artifacts:
@@ -89,6 +100,7 @@ petitions:
 
   - id: OSS-04
     title: "Momsangivelse og korrektioner"
+    legal_footprint: true
     status: requirements
     created: "2026-03-31"
     artifacts:
@@ -112,6 +124,7 @@ petitions:
 
   - id: OSS-05
     title: "Betaling, refusion og rykkere"
+    legal_footprint: true
     status: draft
     created: "2026-03-30"
     artifacts:
@@ -133,6 +146,7 @@ petitions:
 
   - id: OSS-06
     title: "Regnskab og dokumentation"
+    legal_footprint: true
     status: draft
     created: "2026-03-30"
     artifacts:

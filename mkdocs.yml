@@ -56,7 +56,7 @@ nav:
       - "0026 -- Resilience4j": architecture/adr/0026-resilience4j-circuit-breaker.md
       - "0029 -- immudb Ledger": architecture/adr/0029-immudb-tamper-evident-ledger.md
       - "0031 -- Statutory Enums": architecture/adr/0031-statutory-codes-as-enums.md
-      - "0032 -- Catala Oracle": architecture/adr/0032-catala-oracle-only.md
+      - "0032 -- Catala Oracle (CI)": architecture/adr/0032-catala-oracle-only.md
       - "0033 -- Bitemporal Registration": architecture/adr/0033-bitemporal-registration.md
       - "0034 -- OCES3 mTLS Payment": architecture/adr/0034-oces3-mtls-payment-service.md
   - Petitions:

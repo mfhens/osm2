@@ -112,11 +112,11 @@ Internal endpoints follow the pattern:
 | Workflow engine | Flowable | 7.0.1 | BPMN process definitions for case workflows |
 | EDIFACT parsing | Smooks | 2.0.0 | CREMUL/DEBMUL payment notification messages |
 | Double-entry bookkeeping | Custom implementation | — | Every financial event → debit+credit journal entry |
-| Formal law encoding | Catala | (external compiler) | Legal calculation specifications; oracle layer only |
+| Formal law encoding | Catala | (CI; CLI not on JVM classpath) | Legal calculation specifications; oracle layer only; `catala typecheck` gates merges |
 
 Catala `.catala_da` files live in `src/main/catala/`. They are compiled to a test oracle
 that validates Java output against the formal specification. They are never in the runtime
-critical path (ADR-0032).
+critical path; **CI** runs Catala validation online (ADR-0032).
 
 ---
 
@@ -304,7 +304,7 @@ These ADRs define invariants for any project using this blueprint:
 | 0026 | Resilience4j for inter-service resilience |
 | 0029 | immudb for tamper-evident financial ledger |
 | 0031 | Statutory codes as enums, not configuration tables |
-| 0032 | Catala for formal compliance layer (oracle only, not runtime) |
+| 0032 | Catala for formal compliance layer (CI-gated oracle, not runtime) |
 
 ---
 
@@ -314,7 +314,7 @@ These ADRs define invariants for any project using this blueprint:
    It cannot be accidentally violated without crossing a service boundary.
 
 2. **Law as code** — Catala encodes legal rules as testable formal specifications before
-   implementation. Used as an oracle, not a runtime dependency.
+   implementation. Used as an oracle (validated in CI), not a runtime dependency.
 
 3. **Petition-driven delivery** — every feature starts as a formal petition → outcome
    contract → Gherkin → code. The backlog is traceable to law (Juridisk Vejledning).

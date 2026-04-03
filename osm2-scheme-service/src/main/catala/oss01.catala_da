@@ -1,0 +1,69 @@
+# OSS-01 — ML §§ 66–66u skemaklassifikation (formelt orakel)
+
+> Module Oss01
+
+Formaliseret udkast til skemaberettigelse for Ikke-EU-, EU- og Importordningen.
+Kilder: ML §§ 66, 66a, 66d, 66m / MSD art. 358, 358a, 369a, 369l — som i
+`scheme-classification.drl` (FR-01, FR-06). Køres med `catala typecheck --language en --no-stdlib`.
+
+## Enumerationer
+
+```catala-metadata
+declaration enumeration SupplyType:
+  -- Services
+  -- DistanceSalesIntraEu
+  -- ImportGoods
+
+declaration enumeration SchemeOutcome:
+  -- NonEuScheme
+  -- EuScheme
+  -- ImportScheme
+  -- NoOssSchemeSameCountry
+  -- ImportExcludedExcisable
+  -- ImportExcludedValueTooHigh
+  -- ImportShipmentValueRequired
+  -- DistanceSalesIncompleteInputs
+
+declaration scope SchemeEligibilityOracle:
+  input has_eu_seat content boolean
+  input has_fixed_establishment_in_eu content boolean
+  input supply_type content SupplyType
+  input excisable content boolean
+  input shipment_value_eur content decimal
+  input shipment_value_known content boolean
+  input consumption_is_other content boolean
+  input consumption_equals_seat_country content boolean
+  input via_electronic_interface content boolean
+  output outcome content SchemeOutcome
+```
+
+## FR-06 — Import: punktafgift og værdigrænse (ML § 66m / MSD art. 369l)
+
+```catala
+scope SchemeEligibilityOracle:
+  definition outcome equals
+    if supply_type = SupplyType.ImportGoods then (
+      if excisable then SchemeOutcome.ImportExcludedExcisable
+      else if not shipment_value_known then SchemeOutcome.ImportShipmentValueRequired
+      else if shipment_value_eur > 150 then SchemeOutcome.ImportExcludedValueTooHigh
+      else SchemeOutcome.ImportScheme
+    )
+    else if supply_type = SupplyType.DistanceSalesIntraEu then (
+      if via_electronic_interface then SchemeOutcome.EuScheme
+      else if has_eu_seat then SchemeOutcome.EuScheme
+      else SchemeOutcome.DistanceSalesIncompleteInputs
+    )
+    else if supply_type = SupplyType.Services then (
+      if
+        has_eu_seat
+        and (not consumption_is_other)
+        and consumption_equals_seat_country
+      then SchemeOutcome.NoOssSchemeSameCountry
+      else if (not has_eu_seat) and (not has_fixed_establishment_in_eu) then
+        SchemeOutcome.NonEuScheme
+      else if (not has_eu_seat) and has_fixed_establishment_in_eu then
+        SchemeOutcome.EuScheme
+      else SchemeOutcome.EuScheme
+    )
+    else SchemeOutcome.EuScheme
+```
