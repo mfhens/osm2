@@ -55,3 +55,4 @@
 
 # Dolt database name (matches bd init / issue prefix for this repo)
 dolt.database: "osm2"
+sync.git-remote: "https://doltremoteapi.dolthub.com/mfhens/osm2"
