@@ -1,0 +1,104 @@
+# osm2 pack — petition-driven coding workflow for One Stop Moms (OSS)
+#
+# Agents:
+#   city-scoped:  backlog-planner, petition-translator, petition-to-gherkin,
+#                 specs-translator, code-reviewer, catala-encoder, doc-sync
+#   rig-scoped:   tdd-enforcer (one pool per registered service rig)
+#
+# Formulas: mol-petition-scaffold, mol-petition-implement
+#
+# Usage:
+#   In city.toml: includes = ["packs/osm2"]
+#   Per-rig:      [[rigs]] ... includes = ["packs/osm2"]
+
+[pack]
+name = "osm2"
+schema = 1
+
+[formulas]
+dir = "formulas"
+
+# ── City-scoped agents ───────────────────────────────────────────────────────
+
+[[agent]]
+name = "backlog-planner"
+scope = "city"
+description = "Patrols for new OSS petitions and pours the scaffold formula"
+prompt_template = "prompts/backlog-planner.md.tmpl"
+nudge = "Check for petitions labelled 'ready' with no open molecule. Pour mol-petition-scaffold for each one."
+idle_timeout = "30m"
+
+[[agent]]
+name = "petition-translator"
+scope = "city"
+description = "Translates raw OSS petition markdown to a structured outcome contract"
+prompt_template = "prompts/petition-translator.md.tmpl"
+work_query = "bd ready --label=translate --assignee=osm2/petition-translator"
+nudge = "A petition awaits translation. Produce outcome-contract.md and close your bead."
+max_active_sessions = 1
+idle_timeout = "1h"
+
+[[agent]]
+name = "petition-to-gherkin"
+scope = "city"
+description = "Converts outcome contract to Gherkin feature file and failing step-def stubs"
+prompt_template = "prompts/petition-to-gherkin.md.tmpl"
+work_query = "bd ready --label=gherkin --assignee=osm2/petition-to-gherkin"
+nudge = "An outcome contract is ready. Generate a .feature file and failing Cucumber step definitions."
+max_active_sessions = 1
+idle_timeout = "1h"
+
+[[agent]]
+name = "specs-translator"
+scope = "city"
+description = "Converts requirements and architecture to implementation spec"
+prompt_template = "prompts/specs-translator.md.tmpl"
+work_query = "bd ready --label=specs --assignee=osm2/specs-translator"
+nudge = "Outcome contract is ready. Produce implementation-spec.md: service layer, entities, API contracts, GDPR notes."
+max_active_sessions = 1
+idle_timeout = "1h"
+
+[[agent]]
+name = "code-reviewer"
+scope = "city"
+description = "Reviews implementation against petition, specs, GDPR rules, and coding standards"
+prompt_template = "prompts/code-reviewer.md.tmpl"
+work_query = "bd ready --label=review --assignee=osm2/code-reviewer"
+nudge = "Code is ready for review. Validate against petition, specs, GDPR constraints, and osm2 coding standards."
+max_active_sessions = 1
+idle_timeout = "1h"
+
+[[agent]]
+name = "catala-encoder"
+scope = "city"
+description = "Encodes statutory ML rules in Catala formal specification (Tier A petitions only)"
+prompt_template = "prompts/catala-encoder.md.tmpl"
+work_query = "bd ready --label=catala --assignee=osm2/catala-encoder"
+nudge = "A Tier A petition rule is ready for Catala encoding. Produce .catala_en source + companion test scope."
+max_active_sessions = 1
+idle_timeout = "2h"
+
+[[agent]]
+name = "doc-sync"
+scope = "city"
+description = "Synchronises documentation after approved implementation"
+prompt_template = "prompts/doc-sync.md.tmpl"
+work_query = "bd ready --label=docsync --assignee=osm2/doc-sync"
+nudge = "Implementation approved. Update AGENTS.md, architecture/overview.md, and relevant ADRs."
+max_active_sessions = 1
+idle_timeout = "30m"
+
+# ── Rig-scoped agents ────────────────────────────────────────────────────────
+# tdd-enforcer is stamped per registered rig (service directory).
+
+[[agent]]
+name = "tdd-enforcer"
+scope = "rig"
+description = "Implements Java code under TDD discipline: red → green → refactor"
+prompt_template = "prompts/tdd-enforcer.md.tmpl"
+work_query = "bd ready --label=implement --assignee={{.QualifiedName}}"
+nudge = "Check your hook. Implement the assigned spec. Run 'mvn test' — no failures allowed."
+max_active_sessions = 2
+min_active_sessions = 0
+scale_check = "bd ready --label=implement --assignee={{.QualifiedName}} | wc -l"
+idle_timeout = "2h"

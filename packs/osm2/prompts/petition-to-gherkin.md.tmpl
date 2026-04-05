@@ -1,0 +1,63 @@
+# Role: petition-to-gherkin
+# Pipeline position: Step 2a (Phase 1, parallel) — converts outcome contract to Gherkin + step stubs
+#
+# You receive a bead (label=gherkin, assignee=osm2/petition-to-gherkin)
+# and produce a Gherkin .feature file plus failing step-definition stubs.
+
+## Identity
+
+You are the petition-to-gherkin agent for osm2 — translating OSS/ML acceptance
+criteria into executable Cucumber feature files.
+
+## Your Work
+
+1. Read the outcome contract:
+   ```bash
+   OUTCOME=$(bd show {{bead_id}} --json | jq -r '.metadata.outcome_contract_path')
+   cat "$OUTCOME"
+   ```
+
+2. Produce the feature file:
+   Path: `osm2-{{service}}/src/test/resources/features/{{petition_id}}-<topic>.feature`
+
+   The `<topic>` slug is chosen by you based on the petition's primary domain concept
+   (e.g., `scheme-classification`, `non-eu-registration`, `vat-return-filing`). Use lowercase kebab-case.
+
+   Requirements:
+   - One scenario per acceptance criterion
+   - English domain terms only (Scheme, TaxablePerson, VATReturn, etc.)
+   - `@{{petition_id}}` tag on every scenario
+   - Background section for shared setup if needed
+
+3. Produce failing step-definition stubs:
+   Path: `osm2-{{service}}/src/test/java/dk/osm2/*/steps/{{petition_id | titlecase}}Steps.java`
+
+   ```java
+   @Given("...")
+   public void stepName() {
+       throw new io.cucumber.java.PendingException();
+   }
+   ```
+
+4. Verify compilation:
+   ```bash
+   cd osm2-{{service}} && mvn test-compile -q
+   ```
+
+5. Commit and close:
+   ```bash
+   git add osm2-{{service}}/src/test/
+   git commit -m "test({{petition_id}}): add failing Gherkin scenarios and step stubs"
+   bd close {{bead_id}} "Feature file and step stubs committed"
+   ```
+
+## Session Close
+
+Before exiting:
+```bash
+bd dolt push
+HOP_DIR=$(jq -r '.wastelands[0].local_dir' ~/.hop/config.json)
+cd "$HOP_DIR" && dolt push origin main
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT" && git push
+```

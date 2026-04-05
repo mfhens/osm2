@@ -1,0 +1,356 @@
+description = """
+Phase 2 of the osm2 petition pipeline.
+
+Implements approved scaffold artefacts under strict TDD discipline:
+  TDD implementation → code review → [Catala encoding, Tier A only]
+  → HUMAN GATE: review code before merge
+  → documentation sync
+  → HUMAN GATE: final merge approval
+
+This formula assumes mol-petition-scaffold has completed and the human
+scaffold gate has been closed (approved).
+
+## Prerequisites (set by Phase 1)
+- `metadata.outcome_contract_path` — outcome contract file path
+- `metadata.spec_path` — implementation spec file path
+- `metadata.catala_tier` — A, B, or C (determines whether catala-encode step runs)
+
+## Human gates
+Two human gates are mandatory for regulated-domain compliance:
+
+Gate 2 (human-review-code): After code review passes — approve before Catala/doc-sync.
+  bd close <bead_id> "Approved"
+
+Gate 3 (human-merge-gate): After doc-sync — approve to merge the feature branch.
+  bd close <bead_id> "Merge approved"
+
+## Branch model
+The tdd-enforcer creates a feature branch:
+  feature/{{petition_id}}-<service>
+
+After merge gate approval, open a PR manually or close the gate to trigger merge:
+  gh pr create --base main --head feature/{{petition_id}}-<service>
+"""
+formula = "mol-petition-implement"
+version = 2
+
+[vars]
+[vars.petition_id]
+description = "Beads ID of the petition"
+required = true
+
+[vars.service]
+description = "Target service name (e.g. scheme-service, registration-service)"
+default = "scheme-service"
+
+[vars.catala_tier]
+description = "Tier A/B/C — Tier A triggers catala-encode step"
+default = "B"
+
+# ── Steps ────────────────────────────────────────────────────────────────────
+
+[[steps]]
+id = "implement"
+title = "TDD implementation for {{petition_id}} in {{service}}"
+assignee = "{{service}}/tdd-enforcer"
+needs = []
+description = """
+Implement Java code for {{petition_id}} under strict TDD discipline.
+
+**Working directory:** `osm2-{{service}}/`
+
+**Before starting — verify baseline:**
+```bash
+cd osm2-{{service}}
+mvn test -q
+```
+All existing tests must pass. If they do not, stop and notify osm2/code-reviewer.
+
+**1. Create feature branch:**
+```bash
+git checkout main && git pull origin main
+git checkout -b feature/{{petition_id}}-{{service}}
+bd update {{petition_id}} --set-metadata branch="feature/{{petition_id}}-{{service}}"
+```
+
+**2. Read your inputs:**
+```bash
+SPEC=$(bd show {{petition_id}} --json | jq -r '.metadata.spec_path')
+cat "$SPEC"
+ls osm2-{{service}}/src/test/resources/features/ | grep {{petition_id}}
+```
+
+**3. TDD cycle — for each acceptance criterion:**
+a. Write/complete the JUnit unit test (the step stub already exists from Phase 1)
+b. Run `mvn test -pl osm2-{{service}} -q` — confirm it FAILS (red)
+c. Write the minimum production code to make it pass
+d. Run `mvn test -pl osm2-{{service}} -q` — confirm it PASSES (green)
+e. Refactor if needed, re-run to confirm still green
+
+**Package structure (mandatory):**
+```
+dk.osm2.<service>/
+├── web/          REST controllers
+├── service/      Business logic interfaces and implementations
+├── dto/          DTOs
+└── config/       Spring configuration
+```
+
+**GDPR constraints (critical — ADR-0014):**
+- Never store CPR/CVR/name/address in this service's entities
+- Cross-service data: use UUID `person_id` or `registrant_id` references only
+- Cross-service calls: use API clients; never connect to another service's database
+
+**4. Full verification:**
+```bash
+mvn verify -pl osm2-{{service}}
+mvn spotless:check -pl osm2-{{service}}
+```
+Both must pass. Fix any failures before proceeding.
+
+**5. Commit:**
+```bash
+git add osm2-{{service}}/src/
+git commit -m "feat({{petition_id}}): implement {{petition_id}} in {{service}}"
+```
+
+**6. Push and close:**
+```bash
+git push origin feature/{{petition_id}}-{{service}}
+bd close {{issue}} "Implementation complete, branch pushed"
+```
+"""
+
+[[steps]]
+id = "review"
+title = "Code review for {{petition_id}}"
+assignee = "osm2/code-reviewer"
+needs = ["implement"]
+description = """
+Strict code review against petition intent, implementation spec, and osm2 standards.
+
+**1. Read review inputs:**
+```bash
+git fetch origin
+git checkout feature/{{petition_id}}-{{service}}
+SPEC=$(bd show {{petition_id}} --json | jq -r '.metadata.spec_path')
+cat "$SPEC"
+```
+
+**2. Review checklist:**
+- [ ] Implementation matches spec — no under-delivery, no over-engineering
+- [ ] Package structure matches `dk.osm2.<service>/` convention
+- [ ] No PII stored outside registration-service — UUID references only (ADR-0014)
+- [ ] No cross-service DB access — only API clients (ADR-0007)
+- [ ] Audit trail for state-changing operations (ADR-0013)
+- [ ] All Gherkin scenarios in `features/{{petition_id}}-*.feature` pass
+- [ ] `mvn verify` passes
+- [ ] `mvn spotless:check` clean
+- [ ] ArchUnit tests pass (no new violations of ADR-0007 or ADR-0014)
+
+**3. Run security scan (mandatory before approving):**
+Use the `snyk_code_scan` MCP tool if available in this session.
+Rescan after any fixes.
+
+**4a. If changes needed:**
+```bash
+bd update {{issue}} \
+  --notes "Review failed: <specific issues>" \
+  --status open \
+  --assignee {{service}}/tdd-enforcer
+```
+
+**4b. If approved:**
+```bash
+bd close {{issue}} "Code review passed"
+```
+"""
+
+[[steps]]
+id = "catala-encode"
+title = "Catala encoding for {{petition_id}} (Tier A)"
+assignee = "osm2/catala-encoder"
+needs = ["review"]
+description = """
+Encode the statutory ML rule from {{petition_id}} in Catala formal specification.
+This step only runs for Tier A petitions ({{catala_tier}}).
+If catala_tier is B or C, this step can be skipped — close it immediately.
+
+**For Tier B/C — skip:**
+```bash
+bd close {{issue}} "Skipped: catala_tier={{catala_tier}}"
+```
+
+**For Tier A — encode:**
+
+**1. Read the statutory rule source from the petition:**
+```bash
+cat petitions/{{petition_id}}/{{petition_id}}.md | grep -A 50 "## Legal reference\|## Juridisk grundlag"
+```
+
+**2. Produce Catala source file:**
+Path: `osm2-{{service}}/src/main/catala/{{petition_id | titlecase}}.catala_en`
+
+Structure:
+```catala
+# Title: <rule name from ML §>
+# Source: <ML § reference> / <MSD article>
+
+scope <RuleName>:
+  input ...: <type>
+  output ...: <type>
+  rule ...:
+    definition ... equals ...
+    under condition ... consequence ...
+```
+
+**3. Produce companion test scope:**
+Path: `osm2-{{service}}/src/main/catala/tests/test_{{petition_id | lowercase}}.catala_da`
+
+**4. Typecheck and interpret:**
+```bash
+catala typecheck --language en --no-stdlib osm2-{{service}}/src/main/catala/{{petition_id | titlecase}}.catala_en
+catala interpret --language en --no-stdlib --scope TestScope \
+  osm2-{{service}}/src/main/catala/tests/test_{{petition_id | lowercase}}.catala_da
+```
+Both must pass without errors.
+
+**5. Commit:**
+```bash
+git add osm2-{{service}}/src/main/catala/
+git commit -m "catala({{petition_id}}): add formal encoding for ML § rule"
+git push origin feature/{{petition_id}}-{{service}}
+```
+
+**6. Close:**
+```bash
+bd close {{issue}} "Catala encoding complete and CI-verified"
+```
+"""
+
+[[steps]]
+id = "human-review-code"
+title = "HUMAN GATE: Review implementation for {{petition_id}} before merge"
+assignee = "human"
+needs = ["catala-encode"]
+description = """
+Human review before merge. This gate is mandatory for regulated-domain compliance.
+
+**Branch:** feature/{{petition_id}}-{{service}}
+**Catala tier:** {{catala_tier}}
+
+**Review checklist:**
+- [ ] `mvn verify` passes on the feature branch
+- [ ] Code review passed (step above closed)
+- [ ] GDPR constraints respected — no PII outside registration-service
+- [ ] For Tier A: Catala encoding matches the Java implementation
+- [ ] Legal references (ML §§) in commit message and comments are accurate
+- [ ] No accidental scope creep beyond the petition
+
+**To check CI status:**
+```bash
+gh run list --branch feature/{{petition_id}}-{{service}} --limit 5
+```
+
+**To approve (triggers doc-sync):**
+```bash
+bd close <this_bead_id> "Approved for merge"
+```
+
+**To reject:**
+```bash
+bd update <this_bead_id> --notes "<reason>" \
+  --assignee {{service}}/tdd-enforcer --status open
+```
+"""
+
+[[steps]]
+id = "doc-sync"
+title = "Documentation sync for {{petition_id}}"
+assignee = "osm2/doc-sync"
+needs = ["human-review-code"]
+description = """
+Update documentation after approved implementation.
+Commit all doc changes to the same feature branch as the code.
+
+**1. Check out the feature branch:**
+```bash
+git fetch origin
+git checkout feature/{{petition_id}}-{{service}}
+```
+
+**2. Update (only sections that are actually affected):**
+
+- `architecture/overview.md` — service inventory, endpoint lists, implementation status table
+- `AGENTS.md` — if any new agent patterns were discovered during this petition
+- Relevant ADR in `architecture/adr/` — if an architectural decision was implicit
+- `docs/` — developer guide, API reference (if REST endpoints changed)
+
+**3. Build and verify MkDocs:**
+```bash
+mkdocs build --strict 2>&1 | tail -20
+```
+Fix any broken links or missing references before proceeding.
+
+**4. Update program-status.yaml:**
+```bash
+# Change the petition status from 'in_progress' to 'implemented'
+# in petitions/program-status.yaml
+```
+
+**5. Commit:**
+```bash
+git add architecture/ AGENTS.md docs/ petitions/program-status.yaml
+git commit -m "docs({{petition_id}}): sync documentation after implementation"
+git push origin feature/{{petition_id}}-{{service}}
+```
+
+**6. Close:**
+```bash
+bd close {{issue}} "Documentation synced and committed"
+```
+"""
+
+[[steps]]
+id = "human-merge-gate"
+title = "HUMAN GATE: Final merge approval for {{petition_id}}"
+assignee = "human"
+needs = ["doc-sync"]
+description = """
+Final human gate. Close this step to approve the feature branch for merge.
+
+**Branch:** feature/{{petition_id}}-{{service}}
+
+All automated steps are complete. The branch contains:
+- Production code (red → green → refactor)
+- Gherkin scenarios passing
+- Catala encoding (if Tier A)
+- Documentation updates
+- program-status.yaml updated to 'implemented'
+
+**To open a PR (recommended for traceability):**
+```bash
+gh pr create \
+  --base main \
+  --head feature/{{petition_id}}-{{service}} \
+  --title "feat({{petition_id}}): <petition title>" \
+  --body "Closes petition {{petition_id}}"
+```
+
+**To approve and merge directly:**
+```bash
+bd close <this_bead_id> "Merge approved"
+git checkout main && git merge --no-ff feature/{{petition_id}}-{{service}}
+git push origin main
+git branch -d feature/{{petition_id}}-{{service}}
+git push origin --delete feature/{{petition_id}}-{{service}}
+```
+
+**After merge — update Beads and wasteland:**
+```bash
+bd update {{petition_id}} --status closed
+bd dolt push
+HOP_DIR=$(jq -r '.wastelands[0].local_dir' ~/.hop/config.json)
+cd "$HOP_DIR" && dolt push origin main
+```
+"""
