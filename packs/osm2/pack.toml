@@ -88,6 +88,16 @@ nudge = "Implementation approved. Update AGENTS.md, architecture/overview.md, an
 max_active_sessions = 1
 idle_timeout = "30m"
 
+[[agent]]
+name = "tech-debt-executor"
+scope = "city"
+description = "Implements TB-* items from program-status.yaml technical_backlog"
+prompt_template = "prompts/tech-debt-executor.md.tmpl"
+work_query = "bd ready --label=tech-debt --assignee=osm2/tech-debt-executor"
+nudge = "A TB item bead is ready. Read program-status.yaml, implement the item, run mvn verify, push."
+max_active_sessions = 1
+idle_timeout = "2h"
+
 # ── Rig-scoped agents ────────────────────────────────────────────────────────
 # tdd-enforcer is stamped per registered rig (service directory).
 
