@@ -47,6 +47,10 @@ DoltHub's fork-and-push model.
 | `me` | Personal dashboard — your claims, completions, stamps |
 | `status <wanted-id>` | Detailed status for a wanted item |
 | `doctor` | Verify wasteland setup and connectivity |
+| `patterns [filter]` | Browse reusable patterns across projects |
+| `add-pattern [id]` | Register a new pattern |
+| `learnings [pattern-id]` | Browse learnings, optionally filtered by pattern |
+| `learn <pattern-id>` | Record a new learning for a pattern |
 
 Parse $ARGUMENTS: the first word is the command, the rest are passed as
 that command's arguments. If no command is given, show this usage table.
@@ -1136,4 +1140,295 @@ Or for failures:
 
 ```
   [FAIL] config exists — run /wasteland join first
+```
+
+---
+
+## Extended Schema: patterns + learnings
+
+The `mfhens/ufst` wasteland extends the MVR schema with two tables for
+structured cross-project knowledge capture. Sync to get them:
+
+```bash
+cd LOCAL_DIR && dolt pull upstream main
+```
+
+```sql
+-- patterns — reusable arch/agent/domain patterns (slug-keyed, stamped for quality)
+CREATE TABLE IF NOT EXISTS patterns (
+    id           VARCHAR(128) PRIMARY KEY,  -- slug: "catala-legal-oracle"
+    title        TEXT NOT NULL,
+    category     VARCHAR(32),               -- adr | agent | stack | domain | compliance
+    description  TEXT,
+    source_rig   VARCHAR(255),
+    evidence     TEXT,                      -- URL to ADR, blueprint, spike report
+    status       VARCHAR(16) DEFAULT 'draft', -- draft | validated | deprecated
+    quality      INT DEFAULT 0,             -- aggregate stamp score
+    metadata     JSON,
+    created_at   TIMESTAMP,
+    updated_at   TIMESTAMP
+);
+
+-- learnings — project-specific findings anchored to a pattern
+CREATE TABLE IF NOT EXISTS learnings (
+    id           VARCHAR(64) PRIMARY KEY,   -- l-<hash>
+    pattern_id   VARCHAR(128),              -- References patterns.id
+    rig          VARCHAR(255),              -- Project rig
+    project      VARCHAR(64),              -- opendebt | osm2 | shared
+    context      TEXT,                     -- "P054", "ADR-0032", "phase-3"
+    legal_basis  TEXT,                     -- "G.A.1.4.3", "ML §66d" (legal projects)
+    finding      TEXT NOT NULL,
+    valence      VARCHAR(16) DEFAULT 'positive', -- positive | warning | gap
+    evidence     TEXT,                     -- URL to spike report, commit, doc
+    metadata     JSON,
+    created_at   TIMESTAMP
+);
+```
+
+## Command: patterns
+
+Browse reusable patterns across projects.
+
+**Args**: `[filter]` (optional — keyword, category, or status filter)
+
+### Step 1: Load Config + Sync
+
+See **Common: Load Config** and **Common: Sync from Upstream**.
+
+### Step 2: Check Table Exists
+
+```bash
+cd LOCAL_DIR
+dolt sql -q "SHOW TABLES LIKE 'patterns'"
+```
+
+If the table does not exist, tell the user:
+```
+patterns table not found. Run:
+  cd LOCAL_DIR && dolt pull upstream main
+```
+
+### Step 3: Query Patterns
+
+```bash
+cd LOCAL_DIR
+dolt sql -r tabular -q "
+  SELECT
+    id,
+    title,
+    category,
+    status,
+    quality,
+    COALESCE(source_rig, '—') as source,
+    DATE(created_at) as created
+  FROM patterns
+  WHERE status != 'deprecated'
+  ORDER BY quality DESC, created_at DESC
+"
+```
+
+If a filter argument is provided:
+- If it matches a category (adr/agent/stack/domain/compliance), filter by category
+- If it matches a status (draft/validated/deprecated), filter by status
+- Otherwise, search title and description with LIKE '%FILTER%'
+
+### Step 4: Format Output
+
+Group by category. For each pattern show:
+- ID (slug), title, status badge (📝 draft / ✅ validated), quality score, source rig
+
+If no patterns exist yet, show:
+```
+No patterns yet. Add the first one:
+  /wasteland add-pattern catala-legal-oracle
+```
+
+## Command: add-pattern
+
+Register a new reusable pattern.
+
+**Args**: `[id]` (optional slug — will prompt if not provided)
+
+### Step 1: Load Config
+
+See **Common: Load Config** above.
+
+### Step 2: Gather Details
+
+If `id` not provided in args, ask for it.
+
+Ask the user for (interactive):
+- **ID**: slug identifier (e.g., `catala-legal-oracle`, `gdpr-pii-silo`)
+  - Must be lowercase kebab-case, no spaces
+- **Title**: short human-readable name
+- **Category**: one of `adr | agent | stack | domain | compliance`
+- **Description**: what the pattern is and when to use it
+- **Evidence URL**: link to ADR, blueprint, spike report, or documentation
+- **Source rig**: suggest `HANDLE` from config (the current rig)
+
+### Step 3: Insert Pattern
+
+Generate a timestamp for created_at.
+
+```bash
+cd LOCAL_DIR
+dolt sql -q "INSERT INTO patterns (id, title, category, description, source_rig, evidence, status, quality, created_at, updated_at)
+VALUES ('ID', 'TITLE', 'CATEGORY', 'DESCRIPTION', 'SOURCE_RIG', 'EVIDENCE_URL', 'draft', 0, NOW(), NOW())"
+```
+
+### Step 4: Commit and Push
+
+```bash
+cd LOCAL_DIR
+dolt add .
+dolt commit -m "pattern: add PATTERN_ID (CATEGORY)"
+dolt push origin main
+```
+
+### Step 5: Confirm
+
+```
+Pattern registered
+
+  ID:       catala-legal-oracle
+  Title:    Catala Legal Oracle
+  Category: compliance
+  Status:   draft (promote to validated via stamps)
+
+  Next steps:
+    /wasteland learnings catala-legal-oracle   — see learnings for this pattern
+    /wasteland learn catala-legal-oracle       — add a learning
+```
+
+## Command: learnings
+
+Browse learnings, optionally filtered by pattern.
+
+**Args**: `[pattern-id]` (optional)
+
+### Step 1: Load Config + Sync
+
+See **Common: Load Config** and **Common: Sync from Upstream**.
+
+### Step 2: Check Table Exists
+
+```bash
+cd LOCAL_DIR
+dolt sql -q "SHOW TABLES LIKE 'learnings'"
+```
+
+If not found, tell user to sync: `dolt pull upstream main`
+
+### Step 3: Query Learnings
+
+If pattern-id provided:
+
+```bash
+cd LOCAL_DIR
+dolt sql -r tabular -q "
+  SELECT
+    l.id,
+    l.pattern_id,
+    l.project,
+    l.valence,
+    l.context,
+    l.finding,
+    COALESCE(l.legal_basis, '—') as legal_basis,
+    COALESCE(l.rig, '—') as rig,
+    DATE(l.created_at) as date
+  FROM learnings l
+  WHERE l.pattern_id = 'PATTERN_ID'
+  ORDER BY l.created_at DESC
+"
+```
+
+If no pattern-id, show all learnings ordered by pattern + date.
+
+### Step 4: Format Output
+
+Group by valence: ✅ positive | ⚠️ warning | 🔴 gap
+
+For each entry show: context, finding (truncated to 80 chars), project, date.
+If `evidence` is set, show it as a link.
+
+Print pattern header with title + quality score.
+
+If no learnings yet:
+```
+No learnings for this pattern yet.
+  /wasteland learn PATTERN_ID   — add the first one
+```
+
+## Command: learn
+
+Record a new learning for a pattern.
+
+**Args**: `<pattern-id>` (required)
+
+### Step 1: Load Config
+
+See **Common: Load Config** above.
+
+### Step 2: Verify Pattern Exists
+
+```bash
+cd LOCAL_DIR
+dolt sql -q "SELECT id, title FROM patterns WHERE id = 'PATTERN_ID'"
+```
+
+If not found, list available patterns and tell user to pick one or create one with `add-pattern`.
+
+### Step 3: Gather Learning Details
+
+Ask the user for (interactive):
+- **Finding**: what was learned (free text, can be multi-sentence)
+- **Valence**: `positive` | `warning` | `gap` (default: positive)
+  - positive: "this works well"
+  - warning: "watch out for this"
+  - gap: "this is missing / not covered"
+- **Project**: which project this came from (suggest from config rig, or opendebt/osm2/shared)
+- **Context**: petition ID, ADR number, or phase (e.g., "P054", "ADR-0032", "phase-3")
+- **Legal basis** (optional): relevant law reference (e.g., "G.A.1.4.3", "ML §66d")
+- **Evidence URL** (optional): link to spike report, commit, or doc
+
+### Step 4: Generate ID
+
+Generate a short hash for the learning ID:
+
+```bash
+echo -n "PATTERN_ID-TIMESTAMP-HANDLE" | sha256sum | cut -c1-12
+```
+
+Prefix with `l-`: `l-abc123def456`
+
+### Step 5: Insert Learning
+
+```bash
+cd LOCAL_DIR
+dolt sql -q "INSERT INTO learnings (id, pattern_id, rig, project, context, legal_basis, finding, valence, evidence, created_at)
+VALUES ('l-HASH', 'PATTERN_ID', 'HANDLE', 'PROJECT', 'CONTEXT', 'LEGAL_BASIS', 'FINDING', 'VALENCE', 'EVIDENCE_URL', NOW())"
+```
+
+### Step 6: Commit and Push
+
+```bash
+cd LOCAL_DIR
+dolt add .
+dolt commit -m "learning: PATTERN_ID — VALENCE (PROJECT/CONTEXT)"
+dolt push origin main
+```
+
+### Step 7: Confirm
+
+```
+Learning recorded
+
+  Pattern:  catala-legal-oracle
+  Valence:  ⚠️ warning
+  Project:  opendebt
+  Context:  P054 / G.A.1.4.3
+  Finding:  PSRM applies §18k only to main principal; G.A. requires
+            it across all sub-positions. 4 discrepancies found.
+
+  /wasteland learnings catala-legal-oracle — view all learnings for this pattern
 ```
