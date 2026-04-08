@@ -238,6 +238,8 @@
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
+                        <!-- Spring @PathVariable / @RequestParam name inference -->
+                        <parameters>true</parameters>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -413,6 +415,14 @@
 
             </plugins>
         </pluginManagement>
+
+        <!-- Applies managed compiler settings (-parameters, Lombok/MapStruct) to all modules -->
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>

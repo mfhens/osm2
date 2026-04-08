@@ -1,5 +1,6 @@
 package dk.osm2.authority.client;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.osm2.authority.exception.ServiceUnavailableException;
@@ -36,6 +37,7 @@ public class RegistrationServiceClient {
     // DTOs (Java records — BFF-local, not shared with registration-service)
     // -------------------------------------------------------------------------
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record RegistrationItem(
             UUID registrationId,
             UUID registrantId,
@@ -45,6 +47,7 @@ public class RegistrationServiceClient {
             String schemeType,
             String vatNumber) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record RegistrationDetail(
             UUID registrationId,
             UUID registrantId,
@@ -96,7 +99,7 @@ public class RegistrationServiceClient {
     @Retry(name = "registrationService")
     public List<RegistrationItem> listPendingRegistrations() {
         Request request = new Request.Builder()
-                .url(baseUrl + "/api/v1/registrations?status=PENDING_VAT_NUMBER")
+                .url(baseUrl + "/api/v1/registrations?caseworkerQueue=pending")
                 .get()
                 .build();
 

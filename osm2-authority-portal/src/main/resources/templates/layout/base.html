@@ -17,23 +17,25 @@
 <body class="skat-layout skat-layout--authority">
 
     <header class="skat-header" role="banner">
-        <div class="skat-header__logo">
-            <span class="dap-ikon dap-ikon--skat-logo" aria-hidden="true"></span>
-            <span class="skat-header__title" th:text="#{portal.title}">OSS Sagsbehandling</span>
-        </div>
-        <nav class="skat-header__nav" aria-label="Primær navigation">
-            <ul>
-                <li><a th:href="@{/dashboard}" th:text="#{nav.dashboard}">Oversigt</a></li>
-                <li><a th:href="@{/registrations}" th:text="#{nav.registrations}">Registreringer</a></li>
-                <li><a th:href="@{/returns}" th:text="#{nav.returns}">Angivelser</a></li>
-                <li><a th:href="@{/payments}" th:text="#{nav.payments}">Betalinger</a></li>
-                <li><a th:href="@{/records}" th:text="#{nav.records}">Regnskab</a></li>
-                <li><a th:href="@{/exclusions}" th:text="#{nav.exclusions}">Afmeldelser</a></li>
-            </ul>
-        </nav>
-        <div class="skat-header__user">
-            <span th:text="${#authentication?.name}" class="skat-header__username"></span>
-            <a th:href="@{/logout}" th:text="#{nav.logout}">Log ud</a>
+        <div class="skat-header__inner">
+            <div class="skat-header__logo">
+                <span class="dap-ikon dap-ikon--skat-logo" aria-hidden="true"></span>
+                <span class="skat-header__title" th:text="#{portal.title}">OSS Sagsbehandling</span>
+            </div>
+            <nav class="skat-header__nav" aria-label="Primær navigation">
+                <ul>
+                    <li><a th:href="@{/dashboard}" th:text="#{nav.dashboard}">Oversigt</a></li>
+                    <li><a th:href="@{/registrations}" th:text="#{nav.registrations}">Registreringer</a></li>
+                    <li><a th:href="@{/returns}" th:text="#{nav.returns}">Angivelser</a></li>
+                    <li><a th:href="@{/payments}" th:text="#{nav.payments}">Betalinger</a></li>
+                    <li><a th:href="@{/records}" th:text="#{nav.records}">Regnskab</a></li>
+                    <li><a th:href="@{/exclusions}" th:text="#{nav.exclusions}">Afmeldelser</a></li>
+                </ul>
+            </nav>
+            <div class="skat-header__user">
+                <span th:text="${#authentication?.name}" class="skat-header__username"></span>
+                <a th:href="@{/logout}" th:text="#{nav.logout}">Log ud</a>
+            </div>
         </div>
     </header>
 
@@ -42,7 +44,9 @@
     </main>
 
     <footer class="skat-footer" role="contentinfo">
-        <p th:text="#{footer.authority}">Skatteforvaltningen</p>
+        <div class="skat-footer__inner">
+            <p th:text="#{footer.authority}">Skatteforvaltningen</p>
+        </div>
     </footer>
 
     <!-- HTMX accessibility helper (focus management for screen readers) -->

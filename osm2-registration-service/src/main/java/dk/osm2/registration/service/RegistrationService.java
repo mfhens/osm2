@@ -220,6 +220,19 @@ public class RegistrationService {
                 .toList();
     }
 
+    /**
+     * Registrations in {@code PENDING_VAT_NUMBER} awaiting caseworker VAT assignment (authority queue).
+     */
+    @Transactional(readOnly = true)
+    public List<RegistrationResponse> listPendingVatNumber() {
+        return schemeRegistrationRepository
+                .findByRegistrationStatusAndValidToIsNullOrderByNotificationSubmittedAtAsc(
+                        RegistrantStatus.PENDING_VAT_NUMBER.name())
+                .stream()
+                .map(reg -> toResponse(reg, reg.getRegistrant()))
+                .toList();
+    }
+
     // =========================================================================
     // Approve
     // =========================================================================
@@ -599,6 +612,11 @@ public class RegistrationService {
         return new RegistrationResponse(
                 reg.getId(),
                 registrant.getId(),
+                registrant.getRegistrantName(),
+                registrant.getHomeCountry(),
+                registrant.getEmail(),
+                registrant.getPostalAddress(),
+                registrant.getBankDetails(),
                 registrant.getStatus().name(),
                 reg.getValidFrom(),
                 registrant.getVatNumber() != null ? registrant.getVatNumber() : reg.getVatNumber(),

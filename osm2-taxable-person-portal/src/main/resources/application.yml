@@ -18,7 +18,13 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
         provider:
           keycloak:
-            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/osm2}
+            # Explicit endpoints avoid OIDC discovery (GET /.well-known/openid-configuration) at
+            # startup, which breaks local demo if Keycloak is slow or returns a non-OIDC response.
+            authorization-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/osm2}/protocol/openid-connect/auth
+            token-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/osm2}/protocol/openid-connect/token
+            jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/osm2}/protocol/openid-connect/certs
+            user-info-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/osm2}/protocol/openid-connect/userinfo
+            user-name-attribute: preferred_username
 
 management:
   endpoints:

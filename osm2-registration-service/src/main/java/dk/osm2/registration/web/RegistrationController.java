@@ -86,11 +86,24 @@ public class RegistrationController {
      *
      * <p>FR-OSS-02-001
      */
-    @GetMapping
+    @GetMapping(params = "registrantId")
     @Operation(summary = "List registrations for a registrant")
     public ResponseEntity<List<RegistrationResponse>> listByRegistrant(
             @RequestParam("registrantId") UUID registrantId) {
         return ResponseEntity.ok(registrationService.listByRegistrant(registrantId));
+    }
+
+    /**
+     * GET /api/v1/registrations?caseworkerQueue=pending
+     * Authority portal: registrations awaiting VAT number assignment.
+     *
+     * <p>Uses a query parameter so this does not compete with {@code GET /{id}} (a path segment
+     * like {@code pending-vat-number} is otherwise bound to {@code id} and fails UUID conversion → HTTP 400).
+     */
+    @GetMapping(params = "caseworkerQueue=pending")
+    @Operation(summary = "List registrations pending VAT number (caseworker queue)")
+    public ResponseEntity<List<RegistrationResponse>> listPendingVatNumber() {
+        return ResponseEntity.ok(registrationService.listPendingVatNumber());
     }
 
     // =========================================================================

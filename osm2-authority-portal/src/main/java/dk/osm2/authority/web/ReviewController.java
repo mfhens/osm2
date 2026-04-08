@@ -68,7 +68,7 @@ public class ReviewController {
      * {@code GET /review/{id}} — display the full registration detail.
      */
     @GetMapping("/{id}")
-    public String review(@PathVariable UUID id, Model model) {
+    public String review(@PathVariable("id") UUID id, Model model) {
         RegistrationServiceClient.RegistrationDetail detail =
                 registrationServiceClient.getRegistration(id);
 
@@ -89,7 +89,7 @@ public class ReviewController {
      */
     @PostMapping("/{id}/approve")
     public String approve(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @ModelAttribute("approveForm") ApproveForm approveForm,
             RedirectAttributes redirectAttributes) {
 
@@ -107,7 +107,7 @@ public class ReviewController {
      */
     @PostMapping("/{id}/reject")
     public String reject(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @ModelAttribute("rejectForm") RejectForm rejectForm,
             Model model,
             RedirectAttributes redirectAttributes) {

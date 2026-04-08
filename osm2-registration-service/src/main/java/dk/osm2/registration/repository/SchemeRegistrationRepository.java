@@ -29,6 +29,12 @@ public interface SchemeRegistrationRepository extends JpaRepository<SchemeRegist
     List<SchemeRegistration> findByRegistrantId(UUID registrantId);
 
     /**
+     * Caseworker queue: open scheme registrations awaiting VAT number assignment (ML § 66b stk. 2).
+     */
+    List<SchemeRegistration> findByRegistrationStatusAndValidToIsNullOrderByNotificationSubmittedAtAsc(
+            String registrationStatus);
+
+    /**
      * Find the currently active registration for a registrant in a given scheme.
      * Active means: valid_to IS NULL (or in the future).
      *

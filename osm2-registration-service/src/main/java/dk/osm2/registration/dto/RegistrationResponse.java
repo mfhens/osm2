@@ -21,6 +21,21 @@ public record RegistrationResponse(
         /** ID of the {@code Registrant} record. */
         UUID registrantId,
 
+        /** Legal name of the taxable person (PII — authority portal / caseworker views). */
+        String registrantName,
+
+        /** ISO 3166-1 alpha-2 home country. */
+        String homeCountry,
+
+        /** Contact e-mail (PII). */
+        String email,
+
+        /** Postal address (PII). */
+        String postalAddress,
+
+        /** Bank details (PII). */
+        String bankDetails,
+
         /** Current lifecycle status (e.g., "PENDING_VAT_NUMBER", "ACTIVE", "EXCLUDED"). */
         String status,
 

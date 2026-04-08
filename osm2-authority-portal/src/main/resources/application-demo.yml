@@ -4,9 +4,6 @@ spring:
   security:
     oauth2:
       client:
-        provider:
-          keycloak:
-            issuer-uri: http://localhost:8080/realms/osm2
         registration:
           keycloak:
             client-id: osm2-authority-portal
