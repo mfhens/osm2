@@ -20,6 +20,7 @@ before Phase 2 (mol-petition-implement) begins.
 - `osm2-<service>/src/test/resources/features/<id>-<topic>.feature`
 - `osm2-<service>/src/test/java/.../steps/<id>Steps.java` (failing stubs)
 - `petitions/<id>/<id>-implementation-spec.md`
+- `petitions/validation/<id>/validation-contract.md` — VAL-* assertions for optional Phase 6.5 E2E
 
 ## Human gate
 The formula pauses at step "human-review-scaffold". A human must close
@@ -31,7 +32,7 @@ To reject and rework, reassign with notes:
   bd update <petition_bead_id> --assignee osm2/petition-translator --notes "Rework: ..."
 """
 formula = "mol-petition-scaffold"
-version = 2
+version = 3
 
 [vars]
 [vars.petition_id]
@@ -200,9 +201,21 @@ git commit -m "docs({{petition_id}}): add implementation spec"
 bd update {{petition_id}} --set-metadata spec_path="petitions/{{petition_id}}/{{petition_id}}-implementation-spec.md"
 ```
 
-**5. Close your step bead:**
+**5. Validation contract (E2E bridge):**
+Create `petitions/validation/{{petition_id}}/validation-contract.md` with `VAL-*` assertions
+traceable to Gherkin (see `~/.claude/agents/specs-translator.agent.md` Step 7). If no UI/API
+surface, note `E2E not applicable`.
+
 ```bash
-bd close {{issue}} "Implementation spec written"
+mkdir -p petitions/validation/{{petition_id}}
+bd update {{petition_id}} \
+  --set-metadata validation_contract_path="petitions/validation/{{petition_id}}/validation-contract.md"
+git add petitions/validation/{{petition_id}}/ && git commit -m "docs({{petition_id}}): validation contract" || true
+```
+
+**6. Close your step bead:**
+```bash
+bd close {{issue}} "Implementation spec + validation contract written"
 ```
 """
 
@@ -218,6 +231,7 @@ A human must review and approve this scaffold before Phase 2 (implementation) be
 - `petitions/{{petition_id}}/{{petition_id}}-outcome-contract.md` — does this accurately represent the petition?
 - Feature file in `osm2-{{service}}/src/test/resources/features/` — are scenarios complete and testable?
 - `petitions/{{petition_id}}/{{petition_id}}-implementation-spec.md` — is the spec accurate and bounded?
+- `petitions/validation/{{petition_id}}/validation-contract.md` — VAL-* assertions or explicit N/A
 
 **Review checklist:**
 - [ ] Outcome contract matches petition intent — no scope creep, no omissions
@@ -226,6 +240,7 @@ A human must review and approve this scaffold before Phase 2 (implementation) be
 - [ ] GDPR notes are correct — PII handled via UUID references only
 - [ ] catala_tier={{catala_tier}} is correct — affects whether Catala encoding runs in Phase 2
 - [ ] Legal references (ML §§) are correctly identified in the outcome contract
+- [ ] Validation contract ready or N/A before Playwright E2E in Phase 2
 
 **To approve (triggers Phase 2):**
 ```bash

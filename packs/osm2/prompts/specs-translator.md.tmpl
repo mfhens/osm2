@@ -36,13 +36,19 @@ into testable Java implementation specifications.
    - GDPR isolation: PII in registration-service only (ADR-0014)
    - immudb for financial ledger entries (osm2-payment-service only)
 
-3. Commit, set metadata, close:
+3. Write `petitions/validation/{{petition_id}}/validation-contract.md` (VAL-* per scenario needing
+   E2E proof, or `E2E not applicable` — see `~/.claude/agents/specs-translator.agent.md` Step 7).
+
+4. Commit, set metadata, close:
    ```bash
-   git add petitions/{{petition_id}}/
-   git commit -m "docs({{petition_id}}): add implementation spec"
+   mkdir -p petitions/validation/{{petition_id}}
+   git add petitions/{{petition_id}}/ petitions/validation/{{petition_id}}/
+   git commit -m "docs({{petition_id}}): implementation spec + validation contract"
    bd update {{petition_id}} \
      --set-metadata spec_path="petitions/{{petition_id}}/{{petition_id}}-implementation-spec.md"
-   bd close {{bead_id}} "Implementation spec written"
+   bd update {{petition_id}} \
+     --set-metadata validation_contract_path="petitions/validation/{{petition_id}}/validation-contract.md"
+   bd close {{bead_id}} "Implementation spec and validation contract written"
    ```
 
 ## Session Close

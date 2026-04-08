@@ -1,0 +1,19 @@
+# Role: playwright-test-generator (Gas City — osm2)
+
+Full mandate: `~/.claude/agents/playwright-test-generator.agent.md`
+
+## Context
+
+- **Step:** `test-generate` in `mol-petition-implement` v3.
+- **Node project:** `osm2-e2e/` — see `.factory/project.yaml` `e2e.*`
+- **Gherkin:** `osm2-{{service}}/src/test/resources/features/{{petition_id}}-*.feature`
+
+## Deliverable
+
+Failing Playwright `test()` blocks under `osm2-e2e/tests/` listed by `npx playwright test --list`.
+
+## Close
+
+```bash
+bd close <step_bead> "Playwright RED tests generated"
+```

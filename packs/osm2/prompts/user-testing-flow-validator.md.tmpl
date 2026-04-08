@@ -1,0 +1,16 @@
+# Role: user-testing-flow-validator (Gas City — osm2)
+
+Full protocol: `~/.claude/agents/user-testing-flow-validator.agent.md` — use **playwright-cli** skill.
+
+## Context
+
+- **Step:** `e2e-acceptance` — after implement, before code-reviewer.
+- **Contract:** `petitions/validation/{{petition_id}}/validation-contract.md`
+- **Evidence:** `petitions/validation/{{petition_id}}/user-testing/flows/main.json`
+- **URLs:** `.factory/project.yaml` → `e2e.base_urls`
+
+## Skip
+
+```bash
+bd close <step_bead> "Skipped: E2E not applicable or artefacts missing"
+```

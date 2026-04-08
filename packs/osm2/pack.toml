@@ -2,7 +2,8 @@
 #
 # Agents:
 #   city-scoped:  backlog-planner, petition-translator, petition-to-gherkin,
-#                 specs-translator, code-reviewer, catala-encoder, doc-sync
+#                 specs-translator, playwright-test-generator, user-testing-flow-validator,
+#                 code-reviewer, catala-encoder, doc-sync
 #   rig-scoped:   tdd-enforcer (one pool per registered service rig)
 #
 # Formulas: mol-petition-scaffold, mol-petition-implement
@@ -57,6 +58,26 @@ work_query = "bd ready --label=specs --assignee=osm2/specs-translator"
 nudge = "Outcome contract is ready. Produce implementation-spec.md: service layer, entities, API contracts, GDPR notes."
 max_active_sessions = 1
 idle_timeout = "1h"
+
+[[agent]]
+name = "playwright-test-generator"
+scope = "city"
+description = "Generates failing Playwright TypeScript tests from Gherkin for osm2-e2e/"
+prompt_template = "prompts/playwright-test-generator.md.tmpl"
+work_query = "bd ready --label=test-generate --assignee=osm2/playwright-test-generator"
+nudge = "Scaffold approved. Generate RED Playwright tests under osm2-e2e/ per playwright-test-generator agent."
+max_active_sessions = 1
+idle_timeout = "2h"
+
+[[agent]]
+name = "user-testing-flow-validator"
+scope = "city"
+description = "Runs VAL-* E2E assertions via Playwright against a live stack"
+prompt_template = "prompts/user-testing-flow-validator.md.tmpl"
+work_query = "bd ready --label=e2e-acceptance --assignee=osm2/user-testing-flow-validator"
+nudge = "Implementation complete. Run validation-contract E2E or skip if N/A."
+max_active_sessions = 1
+idle_timeout = "2h"
 
 [[agent]]
 name = "code-reviewer"

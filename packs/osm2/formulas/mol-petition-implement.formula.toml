@@ -2,10 +2,14 @@ description = """
 Phase 2 of the osm2 petition pipeline.
 
 Implements approved scaffold artefacts under strict TDD discipline:
-  TDD implementation → code review → [Catala encoding, Tier A only]
+  Playwright test generation (RED) → TDD implementation → E2E acceptance (optional)
+  → code review → [Catala encoding, Tier A only]
   → HUMAN GATE: review code before merge
   → documentation sync
   → HUMAN GATE: final merge approval
+
+Aligns with Claude `pipeline-conductor` Phase 5–6.5: failing Playwright tests in
+`osm2-e2e/`, then Java/Cucumber TDD, then VAL-* E2E when `validation-contract.md` exists.
 
 This formula assumes mol-petition-scaffold has completed and the human
 scaffold gate has been closed (approved).
@@ -13,6 +17,7 @@ scaffold gate has been closed (approved).
 ## Prerequisites (set by Phase 1)
 - `metadata.outcome_contract_path` — outcome contract file path
 - `metadata.spec_path` — implementation spec file path
+- `metadata.validation_contract_path` — optional; `petitions/validation/<id>/validation-contract.md` for E2E
 - `metadata.catala_tier` — A, B, or C (determines whether catala-encode step runs)
 
 ## Human gates
@@ -32,7 +37,7 @@ After merge gate approval, open a PR manually or close the gate to trigger merge
   gh pr create --base main --head feature/{{petition_id}}-<service>
 """
 formula = "mol-petition-implement"
-version = 2
+version = 3
 
 [vars]
 [vars.petition_id]
@@ -50,10 +55,38 @@ default = "B"
 # ── Steps ────────────────────────────────────────────────────────────────────
 
 [[steps]]
+id = "test-generate"
+title = "Generate failing Playwright E2E tests for {{petition_id}}"
+assignee = "osm2/playwright-test-generator"
+needs = []
+description = """
+Generate native Playwright TypeScript `test()` blocks from the petition Gherkin feature,
+outcome contract, and implementation spec — RED tests until the stack is ready.
+
+**Canonical instructions:** `~/.claude/agents/playwright-test-generator.agent.md`.
+
+**Config:** `.factory/project.yaml` — `test_framework: playwright`, `e2e.project_root` (`osm2-e2e/`).
+
+**Inputs:**
+- Feature file: `osm2-{{service}}/src/test/resources/features/{{petition_id}}-*.feature`
+- Outcome contract + implementation spec from petition bead metadata
+
+**Sanity:**
+```bash
+cd osm2-e2e && npm ci && npx playwright test --list
+```
+
+**Close:**
+```bash
+bd close {{issue}} "Playwright RED tests generated under osm2-e2e/tests/"
+```
+"""
+
+[[steps]]
 id = "implement"
 title = "TDD implementation for {{petition_id}} in {{service}}"
 assignee = "{{service}}/tdd-enforcer"
-needs = []
+needs = ["test-generate"]
 description = """
 Implement Java code for {{petition_id}} under strict TDD discipline.
 
@@ -65,6 +98,8 @@ cd osm2-{{service}}
 mvn test -q
 ```
 All existing tests must pass. If they do not, stop and notify osm2/code-reviewer.
+
+The **test-generate** step should already have produced failing Playwright tests under `osm2-e2e/`.
 
 **1. Create feature branch:**
 ```bash
@@ -122,10 +157,36 @@ bd close {{issue}} "Implementation complete, branch pushed"
 """
 
 [[steps]]
+id = "e2e-acceptance"
+title = "E2E acceptance (Playwright VAL-*) for {{petition_id}}"
+assignee = "osm2/user-testing-flow-validator"
+needs = ["implement"]
+description = """
+Run Playwright E2E assertions from `validation-contract.md` (pipeline-conductor Phase 6.5).
+
+**Canonical instructions:** `~/.claude/agents/user-testing-flow-validator.agent.md`.
+
+**Skip** if user-testing library or validation contract is absent:
+```bash
+bd close {{issue}} "Skipped: no validation contract or user-testing library for E2E"
+```
+
+**Evidence:** `petitions/validation/{{petition_id}}/user-testing/flows/main.json`
+**Base URLs:** `.factory/project.yaml` `e2e.base_urls`.
+
+**On failure:** reopen **implement** with assertion details — one retry, then escalate.
+
+**Close when green:**
+```bash
+bd close {{issue}} "E2E VAL assertions passed"
+```
+"""
+
+[[steps]]
 id = "review"
 title = "Code review for {{petition_id}}"
 assignee = "osm2/code-reviewer"
-needs = ["implement"]
+needs = ["e2e-acceptance"]
 description = """
 Strict code review against petition intent, implementation spec, and osm2 standards.
 
