@@ -221,6 +221,72 @@ jobs:
         run: docker stop keycloak && docker rm keycloak
 
   # -------------------------------------------------
+  # JOB: E2E Acceptance Tests (Playwright)
+  # -------------------------------------------------
+  e2e-tests:
+    name: E2E Acceptance Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
+
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - name: Cache Maven repository
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build application JARs
+        run: mvn --batch-mode --no-transfer-progress package -DskipTests
+
+      - name: Start full stack
+        run: docker compose up -d
+
+      - name: Wait for portals to be healthy
+        run: |
+          for url in \
+            "http://localhost:8090/actuator/health" \
+            "http://localhost:8091/actuator/health"; do
+            for i in $(seq 1 30); do
+              if curl -sf "$url" > /dev/null 2>&1; then
+                echo "$url is ready"
+                break
+              fi
+              echo "Waiting for $url (attempt $i/30)..."
+              sleep 5
+            done
+          done
+
+      - name: Install Playwright dependencies
+        working-directory: osm2-e2e
+        run: npm ci && npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: osm2-e2e
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        if: always()
+        with:
+          name: playwright-report
+          path: osm2-e2e/playwright-report/
+          retention-days: 30
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
+
+  # -------------------------------------------------
   # JOB: SonarCloud analysis
   # -------------------------------------------------
   sonar:

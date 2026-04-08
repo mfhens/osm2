@@ -1,0 +1,55 @@
+# OSM2 Factory project configuration
+# Monorepo: Maven parent with multiple Spring Boot services.
+# Node.js 22 is available in the dev toolchain via .mise.toml (mise install).
+
+language: java
+runtime: java 21
+
+# Source and tests live under each Maven module, e.g. osm2-*/src/main/java and src/test/java.
+source_dir: .
+test_dir: .
+
+test:
+  framework: junit
+  runner: "mvn --batch-mode test"
+  discovery: "mvn --batch-mode -DskipTests test-compile"
+  compile_check: "mvn --batch-mode -DskipTests test-compile"
+  coverage: "mvn --batch-mode verify"
+
+bdd:
+  framework: cucumber-jvm
+  runner: "mvn --batch-mode test -Dcucumber.filter.tags=@acceptance"
+  dry_run: "mvn --batch-mode test -Dcucumber.execution.dry-run=true"
+  features_dir: src/test/resources/features
+  steps_dir: src/test/java
+
+lint:
+  runner: "mvn --batch-mode spotless:check"
+  fix: "mvn --batch-mode spotless:apply"
+
+format:
+  runner: "mvn --batch-mode spotless:apply"
+
+build:
+  runner: "mvn --batch-mode -DskipTests package"
+
+package_manager: maven
+install: "mvn --batch-mode -DskipTests test-compile"
+
+# E2E acceptance tests — standalone Node.js project, runs against a live docker-compose stack.
+# Not part of the Maven build. Uses the playwright-test-generator agent.
+# Node.js 22 is provided by mise (.mise.toml); no separate toolchain setup needed.
+e2e:
+  framework: playwright
+  project_root: osm2-e2e
+  test_dir: tests
+  playwright_config: playwright.config.ts
+  ts_config: tsconfig.json
+  install_command: "npm ci"
+  type_check_command: "npx tsc --noEmit"
+  test_list_command: "npx playwright test --list"
+  runner: "npx playwright test"
+  report_dir: playwright-report
+  base_urls:
+    taxable_person_portal: "http://localhost:8090"
+    authority_portal: "http://localhost:8091"
