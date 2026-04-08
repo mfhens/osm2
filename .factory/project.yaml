@@ -5,6 +5,11 @@
 language: java
 runtime: java 21
 
+# Used by ~/.claude/agents pipeline-conductor Phase 5 to pick playwright-test-generator
+# (Playwright TS in osm2-e2e/) instead of bdd-test-generator when the repo uses both
+# Cucumber (Maven) and Playwright (Node) — see ADR-0036.
+test_framework: playwright
+
 # Source and tests live under each Maven module, e.g. osm2-*/src/main/java and src/test/java.
 source_dir: .
 test_dir: .
