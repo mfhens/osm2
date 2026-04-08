@@ -1,0 +1,9 @@
+# Order: new-tech-debt
+#
+# Fires when a bead labelled "tech-debt" AND "ready" appears in the store.
+# Automatically pours mol-tech-debt on the triggering bead.
+
+[[order]]
+name = "new-tech-debt"
+formula = "mol-tech-debt"
+gate = "bead_label:ready:tech-debt"

@@ -1,0 +1,240 @@
+description = """
+Phase 1 of the osm2 petition pipeline.
+
+Translates an OSS petition into a testable scaffold:
+  outcome contract → Gherkin feature file + failing step stubs (parallel)
+                   → implementation spec (parallel)
+  → HUMAN GATE: review scaffold before any code is written
+
+This formula is SAFE — it only produces documentation and test scaffolding.
+No production code is written. The human gate at the end is mandatory
+before Phase 2 (mol-petition-implement) begins.
+
+## Input (bead metadata)
+- `metadata.petition_path`: relative path to the petition markdown file
+- `metadata.service`: target service name (e.g. scheme-service, registration-service)
+- `metadata.catala_tier`: A, B, or C — determines whether Catala encoding runs in Phase 2
+
+## Output artefacts
+- `petitions/<id>/<id>-outcome-contract.md`
+- `osm2-<service>/src/test/resources/features/<id>-<topic>.feature`
+- `osm2-<service>/src/test/java/.../steps/<id>Steps.java` (failing stubs)
+- `petitions/<id>/<id>-implementation-spec.md`
+
+## Human gate
+The formula pauses at step "human-review-scaffold". A human must close
+that step before Phase 2 is triggered:
+
+  bd close <bead_id> "Approved"
+
+To reject and rework, reassign with notes:
+  bd update <petition_bead_id> --assignee osm2/petition-translator --notes "Rework: ..."
+"""
+formula = "mol-petition-scaffold"
+version = 2
+
+[vars]
+[vars.petition_id]
+description = "Beads ID of the source petition bead"
+required = true
+
+[vars.service]
+description = "Target service name (e.g. scheme-service, registration-service)"
+default = "scheme-service"
+
+[vars.catala_tier]
+description = "Tier A (formal Catala rules), B (workflow), or C (reference-only)"
+default = "B"
+
+# ── Steps ────────────────────────────────────────────────────────────────────
+
+[[steps]]
+id = "translate"
+title = "Translate petition {{petition_id}} to outcome contract"
+assignee = "osm2/petition-translator"
+needs = []
+description = """
+Read the petition markdown at `metadata.petition_path` (relative to the repo root).
+Produce a structured outcome contract.
+
+**1. Locate the petition:**
+```bash
+PETITION_PATH=$(bd show {{petition_id}} --json | jq -r '.metadata.petition_path')
+cat "$PETITION_PATH"
+```
+
+**2. Produce outcome-contract.md** in the same directory:
+File: `petitions/{{petition_id}}/{{petition_id}}-outcome-contract.md`
+
+Required sections:
+- **Petition reference**: ID + one-sentence description
+- **Acceptance criteria**: numbered list, each testable (Given/When/Then testable)
+- **Out of scope**: what this petition explicitly does NOT cover
+- **Test boundary**: which service(s) and layers are touched; what must be mocked
+
+**Domain rules to apply:**
+- All identifiers use English domain terms (see AGENTS.md §Implementation Language)
+- GDPR/PII stays in the registration-service; other services use UUID references only
+- No cross-service database access (each service owns its schema)
+- Core domain terms: Scheme/Ordning, TaxablePerson/AfgiftspligtigPerson, Registration/Registrering,
+  VATReturn/Afgiftsangivelse, TaxPeriod/Afgiftsperiode, Intermediary/Formidler
+
+**3. Commit the file:**
+```bash
+git add petitions/{{petition_id}}/
+git commit -m "docs({{petition_id}}): add outcome contract"
+```
+
+**4. Set metadata on the petition bead:**
+```bash
+bd update {{petition_id}} --set-metadata outcome_contract_path="petitions/{{petition_id}}/{{petition_id}}-outcome-contract.md"
+```
+
+**5. Close your step bead:**
+```bash
+bd close {{issue}} "Outcome contract written at petitions/{{petition_id}}/"
+```
+"""
+
+[[steps]]
+id = "gherkin"
+title = "Generate Gherkin feature file for {{petition_id}}"
+assignee = "osm2/petition-to-gherkin"
+needs = ["translate"]
+description = """
+Read the outcome contract and produce a Cucumber .feature file + failing step-definition stubs.
+These run in parallel with the specs step.
+
+**1. Read outcome contract:**
+```bash
+OUTCOME=$(bd show {{petition_id}} --json | jq -r '.metadata.outcome_contract_path')
+cat "$OUTCOME"
+```
+
+**2. Produce feature file:**
+Path: `osm2-{{service}}/src/test/resources/features/{{petition_id}}-*.feature`
+
+Requirements:
+- One scenario per acceptance criterion
+- Use English domain terms (not Danish)
+- @{{petition_id}} tag on each scenario for filtering
+- Background section for shared setup if needed
+- No scenario should test more than one AC
+
+**Feature file location:**
+`osm2-{{service}}/src/test/resources/features/{{petition_id}}-<topic>.feature`
+
+The `<topic>` slug is chosen by you based on the petition's primary domain concept
+(e.g., `scheme-classification`, `non-eu-registration`, `vat-return`). Use lowercase kebab-case.
+
+**3. Produce failing step-definition stubs:**
+Path: `osm2-{{service}}/src/test/java/dk/osm2/*/steps/{{petition_id | titlecase}}Steps.java`
+
+Requirements:
+- Annotate each step with @Given/@When/@Then
+- Method body: `throw new io.cucumber.java.PendingException();`
+- Import from `io.cucumber.java.en.*`
+- Class annotated with no Spring context (stubs only, context added during implementation)
+
+**4. Verify the feature file compiles with Maven:**
+```bash
+cd osm2-{{service}} && mvn test-compile -q
+```
+Fix any compile errors before proceeding.
+
+**5. Commit:**
+```bash
+git add osm2-{{service}}/src/test/
+git commit -m "test({{petition_id}}): add failing Gherkin scenarios and step stubs"
+```
+
+**6. Close your step bead:**
+```bash
+bd close {{issue}} "Feature file and step stubs committed"
+```
+"""
+
+[[steps]]
+id = "specs"
+title = "Generate implementation spec for {{petition_id}}"
+assignee = "osm2/specs-translator"
+needs = ["translate"]
+description = """
+Read the outcome contract and produce a concrete implementation spec.
+Runs in parallel with the gherkin step.
+
+**1. Read outcome contract:**
+```bash
+OUTCOME=$(bd show {{petition_id}} --json | jq -r '.metadata.outcome_contract_path')
+cat "$OUTCOME"
+```
+
+**2. Produce implementation-spec.md:**
+Path: `petitions/{{petition_id}}/{{petition_id}}-implementation-spec.md`
+
+Required sections:
+- **Service**: which service owns this work ({{service}})
+- **Entities**: new or modified JPA entities with fields and constraints
+- **Repository**: new repository methods needed
+- **Service layer**: new/modified service interfaces and their contracts
+- **REST API**: new/modified endpoints (method, path, request/response types)
+- **GDPR notes**: which fields are PII, how they are handled (UUID references only)
+- **Error cases**: expected exceptions and HTTP status codes
+- **Out of scope**: implementation explicitly excluded from this petition
+
+**Constraints to enforce:**
+- Package structure: `dk.osm2.<service>/{web,service,dto,config}` (see existing services)
+- No cross-service DB access — use API clients for other services
+- Audit trail via `ufst-bookkeeping-core` for any financial/state-changing operations
+- Keycloak roles referenced by name (e.g. TAXABLE_PERSON, AUTHORITY, ADMIN)
+- immudb ledger entries for financial state changes (osm2-payment-service only)
+
+**3. Commit:**
+```bash
+git add petitions/{{petition_id}}/
+git commit -m "docs({{petition_id}}): add implementation spec"
+```
+
+**4. Set metadata:**
+```bash
+bd update {{petition_id}} --set-metadata spec_path="petitions/{{petition_id}}/{{petition_id}}-implementation-spec.md"
+```
+
+**5. Close your step bead:**
+```bash
+bd close {{issue}} "Implementation spec written"
+```
+"""
+
+[[steps]]
+id = "human-review-scaffold"
+title = "HUMAN GATE: Review scaffold for {{petition_id}} before implementation"
+assignee = "human"
+needs = ["gherkin", "specs"]
+description = """
+A human must review and approve this scaffold before Phase 2 (implementation) begins.
+
+**Review artefacts:**
+- `petitions/{{petition_id}}/{{petition_id}}-outcome-contract.md` — does this accurately represent the petition?
+- Feature file in `osm2-{{service}}/src/test/resources/features/` — are scenarios complete and testable?
+- `petitions/{{petition_id}}/{{petition_id}}-implementation-spec.md` — is the spec accurate and bounded?
+
+**Review checklist:**
+- [ ] Outcome contract matches petition intent — no scope creep, no omissions
+- [ ] Gherkin scenarios are testable and map 1:1 to acceptance criteria
+- [ ] Implementation spec is feasible and minimal — no over-engineering
+- [ ] GDPR notes are correct — PII handled via UUID references only
+- [ ] catala_tier={{catala_tier}} is correct — affects whether Catala encoding runs in Phase 2
+- [ ] Legal references (ML §§) are correctly identified in the outcome contract
+
+**To approve (triggers Phase 2):**
+```bash
+bd close <this_bead_id> "Approved"
+```
+
+**To reject and rework:**
+```bash
+bd update <petition_bead_id> --set-metadata rejection_reason="<specific issue>"
+bd update <translate_step_bead_id> --assignee osm2/petition-translator --status open
+```
+"""

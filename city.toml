@@ -1,0 +1,40 @@
+# osm2 — Gas City configuration
+#
+# Multi-agent orchestration for the osm2 (One Stop Moms) petition-driven SDLC pipeline.
+# Agents translate OSS petitions → Gherkin → specs → TDD implementation → review → merge.
+# Three mandatory human gates ensure ML §§ 66-66u compliance before code is written,
+# before code is merged, and before the branch lands in main.
+#
+# Quick start:
+#   gc rig add scheme-service ~/GitHub/osm2/osm2-scheme-service
+#   gc start ~/GitHub/osm2
+#
+# Submit a petition for processing (normally done via program-status.yaml):
+#   bd create --title "OSS-03 Importordning registration" \
+#     --label petition --label ready \
+#     --set-metadata service=registration-service \
+#     --set-metadata petition_path=petitions/OSS-03/OSS-03.md \
+#     --set-metadata catala_tier=A
+#
+# Human gate items:
+#   bd list --assignee human
+
+[workspace]
+name = "osm2"
+provider = "claude"
+includes = ["packs/osm2"]
+
+[daemon]
+patrol_interval = "30s"
+max_restarts = 5
+restart_window = "1h"
+shutdown_timeout = "10s"
+
+# ── Rigs ──────────────────────────────────────────────────────────────────────
+# Add a rig per service directory. The tdd-enforcer pool runs one agent per rig.
+# After adding a rig, no restart needed — Gas City picks it up on next patrol.
+
+[[rigs]]
+name = "scheme-service"
+path = "/home/markus/GitHub/osm2/osm2-scheme-service"
+includes = ["packs/osm2"]

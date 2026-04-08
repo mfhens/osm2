@@ -1,0 +1,133 @@
+description = """
+Tech-debt execution formula for osm2.
+
+Implements a single TB-* item from the technical_backlog in program-status.yaml:
+  implement (tech-debt-executor) → code review → HUMAN GATE: merge approval
+
+Simpler than mol-petition-implement — no Gherkin, no specs doc, no Catala.
+The TB item description IS the spec; tests are added as part of the implementation.
+
+## Input (bead metadata)
+- `metadata.tb_id`: TB item ID (e.g. TB-001)
+
+## Human gate
+After review, a human must approve before merge:
+  bd close <bead_id> "Merge approved"
+"""
+formula = "mol-tech-debt"
+version = 1
+
+[vars]
+[vars.tb_id]
+description = "Technical backlog item ID (e.g. TB-001)"
+required = true
+
+# ── Steps ────────────────────────────────────────────────────────────────────
+
+[[steps]]
+id = "implement"
+title = "Implement {{tb_id}}"
+assignee = "osm2/tech-debt-executor"
+needs = []
+description = """
+Implement the technical backlog item {{tb_id}} from petitions/program-status.yaml.
+
+**1. Read the item:**
+```bash
+python3 -c "
+import yaml, sys
+data = yaml.safe_load(open('petitions/program-status.yaml'))
+item = next(i for i in data['technical_backlog'] if i['id'] == '{{tb_id}}')
+print(yaml.dump(item, allow_unicode=True))
+"
+```
+
+**2. Verify preconditions:**
+- Status must be `open`
+- `depends_on` items must be `implemented`
+- `git status --short` must be clean
+
+**3. Create feature branch:**
+```bash
+git checkout main && git pull origin main
+git checkout -b tech-debt/{{tb_id}}
+```
+
+**4. Pattern discovery:** Find an existing example of the same change. Replicate it.
+
+**5. Implement (TDD):**
+```bash
+mvn verify -pl <module> -q && mvn spotless:check -pl <module>
+```
+
+**6. Update program-status.yaml:** Set {{tb_id}} status to `in_progress`.
+
+**7. Commit, push, close:**
+```bash
+git add -A
+git commit -m "chore({{tb_id}}): <short description>"
+git push origin tech-debt/{{tb_id}}
+bd close {{issue}} "{{tb_id}} implemented"
+```
+"""
+
+[[steps]]
+id = "review"
+title = "Review {{tb_id}}"
+assignee = "osm2/code-reviewer"
+needs = ["implement"]
+description = """
+Review the tech debt implementation for {{tb_id}}.
+
+**1. Check out branch:**
+```bash
+git fetch origin && git checkout tech-debt/{{tb_id}}
+```
+
+**2. Review checklist:**
+- [ ] Implementation matches TB description — no scope creep
+- [ ] Pattern matches existing code — no new patterns without justification
+- [ ] Tests added/updated, `mvn verify` passes
+- [ ] No PII violations (ADR-0014), no cross-service DB access (ADR-0007)
+- [ ] `mvn spotless:check` clean
+
+**3. Security scan:** Run `snyk_code_scan` MCP tool if available.
+
+**4. Disposition:**
+```bash
+# Needs rework:
+bd update {{issue}} --notes "Rework: <reason>" \
+  --status open --assignee osm2/tech-debt-executor
+
+# Approved:
+bd close {{issue}} "Review passed"
+```
+"""
+
+[[steps]]
+id = "human-merge-gate"
+title = "HUMAN GATE: Merge {{tb_id}}"
+assignee = "human"
+needs = ["review"]
+description = """
+Final approval before merging the tech-debt branch.
+
+**Branch:** tech-debt/{{tb_id}}
+
+```bash
+bd close <this_bead_id> "Merge approved"
+git checkout main && git merge --no-ff tech-debt/{{tb_id}}
+git push origin main
+git branch -d tech-debt/{{tb_id}}
+git push origin --delete tech-debt/{{tb_id}}
+```
+
+After merge — update tracking:
+```bash
+# Set tb_id status to 'implemented' in petitions/program-status.yaml
+git add petitions/program-status.yaml
+git commit -m "chore({{tb_id}}): mark implemented"
+git push origin main
+bd dolt push
+```
+"""
