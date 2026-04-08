@@ -11,8 +11,7 @@ import dk.osm2.common.arch.SharedArchitectureRules;
 /**
  * Architecture rules for osm2-records-service.
  *
- * <p>This service is currently a stub (no source classes). All rules pass vacuously.
- * They will gate implementation from the first commit.
+ * <p>Implementation is still minimal; ArchUnit rules apply as domain and web layers grow.
  *
  * <p>R-06: add as a disabled @Test once .client classes are introduced.
  */

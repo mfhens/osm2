@@ -91,6 +91,41 @@ public final class DemoConstants {
       UUID.fromString("cccc0002-0000-0000-0000-000000000000");
 
   // -------------------------------------------------------------------------
+  // Return lines (return_line.id) — UUIDs are hex-only (PostgreSQL uuid type).
+  // -------------------------------------------------------------------------
+
+  public static final UUID RETURN_LINE_EU_Q3_DE =
+      UUID.fromString("b0010001-0001-4000-8000-000000000001");
+  public static final UUID RETURN_LINE_EU_Q3_FR =
+      UUID.fromString("b0010001-0001-4000-8000-000000000002");
+  public static final UUID RETURN_LINE_EU_Q3_SE =
+      UUID.fromString("b0010001-0001-4000-8000-000000000003");
+
+  public static final UUID RETURN_LINE_EU_Q4_DE =
+      UUID.fromString("b0020001-0001-4000-8000-000000000001");
+  public static final UUID RETURN_LINE_EU_Q4_NL =
+      UUID.fromString("b0020001-0001-4000-8000-000000000002");
+
+  public static final UUID RETURN_LINE_EU_Q1_2024_ORIG_DE =
+      UUID.fromString("b0030001-0001-4000-8000-000000000001");
+
+  public static final UUID RETURN_LINE_EU_Q1_2024_CORR_DE =
+      UUID.fromString("b0040001-0001-4000-8000-000000000001");
+
+  public static final UUID RETURN_LINE_NON_EU_Q3_DK =
+      UUID.fromString("b0050001-0001-4000-8000-000000000001");
+  public static final UUID RETURN_LINE_NON_EU_Q3_FI =
+      UUID.fromString("b0050001-0001-4000-8000-000000000002");
+
+  public static final UUID RETURN_LINE_IMPORT_OCT_DE =
+      UUID.fromString("b0060001-0001-4000-8000-000000000001");
+  public static final UUID RETURN_LINE_IMPORT_OCT_FR =
+      UUID.fromString("b0060001-0001-4000-8000-000000000002");
+
+  public static final UUID RETURN_LINE_IMPORT_NOV_AT =
+      UUID.fromString("b0070001-0001-4000-8000-000000000001");
+
+  // -------------------------------------------------------------------------
   // Payments
   // -------------------------------------------------------------------------
 

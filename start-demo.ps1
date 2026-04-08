@@ -238,7 +238,13 @@ function Start-Service {
         [string]$DbName,
         [hashtable]$ExtraArgs = @{}
     )
-    $jar = Get-ChildItem $JarPattern -Exclude "*.original" -ErrorAction SilentlyContinue |
+    # Spring Boot repackage produces *-plain.jar (thin, no Main-Class) and the executable
+    # fat JAR. Wildcard order is not stable; exclude plain/original so java -jar works.
+    $jar = Get-ChildItem $JarPattern -ErrorAction SilentlyContinue |
+           Where-Object {
+               $_.Name -notmatch '-plain\.jar$' -and
+               $_.Name -notmatch '\.original$'
+           } |
            Select-Object -First 1
     if (-not $jar) {
         Write-Err "  JAR not found: $JarPattern"

@@ -68,6 +68,8 @@ nav:
     - "OSS-06 -- Records": petitions/OSS-06/OSS-06.md
   - References:
     - "DA16 -- Moms One Stop Shop": docs/references/DA16-moms-one-stop-shop.md
+  - Engineering:
+    - "Cross-repo learnings (osm2 / opendebt)": docs/engineering/cross-repo-learnings.md
   - Integrations:
     - "Basecamp": docs/integrations/basecamp/README.md
   - Compliance:
